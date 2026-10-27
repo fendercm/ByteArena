@@ -1,0 +1,38 @@
+/* Базовые переменные. Значения заменит D по UI-киту из Figma. */
+:root {
+  --color-bg: #0f1220;
+  --color-surface: #181c2e;
+  --color-text: #e8ebf5;
+  --color-muted: #8a92ad;
+  --color-accent: #4f6bff;
+  --radius: 8px;
+  --content-width: 1200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 16px;
+}

@@ -1,0 +1,47 @@
+# Весь проект одной командой: docker compose up --build
+# Сайт: http://localhost   API: http://localhost/api   Документация API: http://localhost/api/docs
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+    environment:
+      WATCHPACK_POLLING: "true"   # чтобы перезагрузка при изменениях работала на Windows
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  proxy:
+    image: caddy:2
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pgdata:
