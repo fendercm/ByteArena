@@ -1,0 +1,10 @@
+*                   @fendercm
+
+# Бэкенд: A или B
+/backend/           @fendercm @DimaTsoi
+
+# Фронтенд: C или E
+/frontend/          @fendercm @bogomdan13
+
+# Сам этот файл и CI меняет только бэкенд-команда
+/.github/           @fendercm 
