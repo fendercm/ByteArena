@@ -13,5 +13,35 @@ services:
       interval: 3s
       retries: 10
 
+  backend:
+    build: ./backend
+    env_file: .env
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+    environment:
+      WATCHPACK_POLLING: "true" # чтобы перезагрузка при изменениях работала на Windows
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  proxy:
+    image: caddy:2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - backend
+      - frontend
+
 volumes:
   pgdata:
