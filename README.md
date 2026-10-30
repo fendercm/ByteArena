@@ -94,8 +94,8 @@ docker compose up --build
 | Адрес | Что там |
 |---|---|
 | http://localhost:8080 | сайт (Next.js) |
-| http://localhost/api/health | проверка бэкенда, ответ `{"status":"ok"}` |
-| http://localhost/api/docs | документация API |
+| http://localhost:8080/api/health | проверка бэкенда, ответ `{"status":"ok"}` |
+| http://localhost:8080/api/docs | документация API |
 | localhost:5432 | PostgreSQL (логин и пароль из `.env`) |
 
 Полезные команды:

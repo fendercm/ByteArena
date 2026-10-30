@@ -1,5 +1,5 @@
 # Весь проект одной командой: docker compose up --build
-# Сайт: http://localhost   API: http://localhost/api   Документация API: http://localhost/api/docs
+# Сайт: http://localhost:8080   API: http://localhost:8080/api/health   Документация API: http://localhost:8080/api/docs
 services:
   db:
     image: postgres:16
