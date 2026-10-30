@@ -1,5 +1,5 @@
 # Весь проект одной командой: docker compose up --build
-# Сайт: http://localhost   API: http://localhost/api   Документация API: http://localhost/api/docs
+# Сайт: http://localhost:8080   API: http://localhost:8080/api/health   Документация API: http://localhost:8080/api/docs
 services:
   db:
     image: postgres:16
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER}" ]
       interval: 3s
       retries: 10
 
@@ -27,7 +27,7 @@ services:
     build: ./frontend
     env_file: .env
     environment:
-      WATCHPACK_POLLING: "true"   # чтобы перезагрузка при изменениях работала на Windows
+      WATCHPACK_POLLING: "true" # чтобы перезагрузка при изменениях работала на Windows
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -36,7 +36,7 @@ services:
   proxy:
     image: caddy:2
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
     depends_on:

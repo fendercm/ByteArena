@@ -93,9 +93,9 @@ docker compose up --build
 
 | Адрес | Что там |
 |---|---|
-| http://localhost | сайт (Next.js) |
-| http://localhost/api/health | проверка бэкенда, ответ `{"status":"ok"}` |
-| http://localhost/api/docs | документация API |
+| http://localhost:8080 | сайт (Next.js) |
+| http://localhost:8080/api/health | проверка бэкенда, ответ `{"status":"ok"}` |
+| http://localhost:8080/api/docs | документация API |
 | localhost:5432 | PostgreSQL (логин и пароль из `.env`) |
 
 Полезные команды:
@@ -106,7 +106,67 @@ docker compose down              # остановить
 docker compose down -v           # остановить и стереть базу
 ```
 
-Если порт 80 занят, поменяйте в `docker-compose.yml` `"80:80"` на `"8080:80"` и откройте http://localhost:8080.
+
+## Возможные проблемы и решения (Troubleshooting)
+
+### 1. Занят порт 8080 (`bind: address already in use` / `socket access permissions`)
+Порт `8080` на хост-машине уже занят другим приложением (другой веб-сервер, проект на Node.js/Java или локальный прокси).
+
+- **Windows:**
+  Найдите PID процесса, занявшего порт, и остановите его:
+  ```powershell
+  # 1. Поиск PID процесса, слушающего порт 8080:
+  netstat -ano | findstr :8080
+  # 2. Завершение процесса по найденному PID (например, 12345):
+  taskkill /PID 12345 /F
+  ```
+
+- **macOS / Linux:**
+  Определите и завершите процесс командой:
+  ```bash
+  # Найти PID и принудительно остановить процесс на порту 8080:
+  lsof -ti :8080 | xargs kill -9
+  ```
+
+> **Важно по Discord OAuth:** Так как платформа работает на порту `8080`, обратный адрес (Redirect URI) в Discord Developer Portal должен быть зарегистрирован с портом `8080`
+
+---
+
+### 2. Конфликт порта базы данных 5432 (`address already in use`)
+Порт `5432` занят локально запущенным экземпляром PostgreSQL вне Docker.
+
+- **Windows:** откройте диспетчер служб (`Win + R` → `services.msc`), найдите службу `postgresql-x64-<версия>` и остановите её (либо через консоль Администратора: `net stop postgresql-x64-16`).
+- **macOS:** остановите службу Homebrew:
+  ```bash
+  brew services stop postgresql
+  ```
+- **Linux:** остановите системный демон:
+  ```bash
+  sudo systemctl stop postgresql
+  ```
+
+---
+
+### 3. Не открывается `localhost` при включенном VPN
+Корпоративные или публичные VPN-клиенты могут перехватывать системный DNS-резолвинг или некорректно маршрутизировать loopback-подсеть (`127.0.0.0/8`).
+
+- Открывайте проект по прямому IPv4-адресу с указанием порта:
+  `http://127.0.0.1:8080`
+- Добавьте адреса `localhost` и `127.0.0.1` в список исключений (Bypass / Split Tunneling) в настройках вашего VPN-клиента.
+
+---
+
+### 4. Ошибка подключения к Docker Daemon (`Cannot connect to the Docker daemon...`)
+Docker Engine не запущен, либо зависла виртуальная машина подсистемы WSL2 на Windows.
+
+1. Убедитесь, что приложение **Docker Desktop** запущено и статус в левом нижнем углу окна зелёный.
+2. Если Docker Desktop на Windows зависает на этапе «Starting Docker Engine»:
+   - Полностью закройте Docker Desktop.
+   - В PowerShell от Администратора выполните принудительный сброс подсистемы:
+     ```powershell
+     wsl --shutdown
+     ```
+   - Запустите Docker Desktop заново.
 
 ### Структура
 
