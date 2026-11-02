@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "title": "Autumn Championship 2026",
+    "description": "Seasonal Counter-Strike tournament",
+    "game": "cs2",
+    "starts_at": "2026-11-05T18:00:00+03:00",
+    "max_teams": 8,
+    "rules": "Single elimination, best of three",
+    "status": "registration",
+    "organizer_id": 1,
+    "created_at": "2026-10-25T12:00:00+03:00"
+  },
+  {
+    "id": 2,
+    "title": "Winter Open 2026",
+    "description": "Winter Counter-Strike tournament",
+    "game": "cs2",
+    "starts_at": "2026-12-10T17:00:00+03:00",
+    "max_teams": 16,
+    "rules": "Single elimination, best of three",
+    "status": "draft",
+    "organizer_id": 2,
+    "created_at": "2026-10-28T10:00:00+03:00"
+  },
+    {
+    "id": 3,
+    "title": "ByteArena Pro League",
+    "description": "Professional Counter-Strike tournament",
+    "game": "cs2",
+    "starts_at": "2026-10-29T18:00:00+03:00",
+    "max_teams": 8,
+    "rules": "Single elimination, best of three",
+    "status": "running",
+    "organizer_id": 1,
+    "created_at": "2026-10-20T12:00:00+03:00"
+  },
+  {
+  "id": 4,
+  "title": "Summer Masters 2026",
+  "description": "Completed Counter-Strike tournament",
+  "game": "cs2",
+  "starts_at": "2026-07-15T18:00:00+03:00",
+  "max_teams": 8,
+  "rules": "Single elimination, best of three",
+  "status": "finished",
+  "organizer_id": 2,
+  "created_at": "2026-07-01T12:00:00+03:00"
+  },
+  {
+  "id": 5,
+  "title": "New Year Cup 2027",
+  "description": "New Year Counter-Strike tournament",
+  "game": "cs2",
+  "starts_at": "2026-12-25T16:00:00+03:00",
+  "max_teams": 16,
+  "rules": "Single elimination, best of three",
+  "status": "registration",
+  "organizer_id": 1,
+  "created_at": "2026-10-30T12:00:00+03:00"
+},
+{
+  "id": 6,
+  "title": "ByteArena Invitational",
+  "description": "Invitational Counter-Strike tournament",
+  "game": "cs2",
+  "starts_at": "2027-01-15T18:00:00+03:00",
+  "max_teams": 8,
+  "rules": "Single elimination, best of three",
+  "status": "draft",
+  "organizer_id": 2,
+  "created_at": "2026-10-30T14:00:00+03:00"
+}
+]
