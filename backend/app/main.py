@@ -15,7 +15,3 @@ app.include_router(teams.tournaments_router)
 # Новые роутеры подключаются здесь:
 #   from app.routers import teams
 #   app.include_router(teams.router)
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(teams.router)
-app.include_router(teams.tournaments_router)
