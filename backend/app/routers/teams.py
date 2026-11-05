@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.schemas.common import ErrorOut
 from app.schemas.team import (
     RegistrationCreate,
     RegistrationOut,
@@ -23,11 +24,15 @@ def _member_profile(user_id: int, role: str) -> TeamMemberOut:
     )
 
 
-@router.post("", response_model=TeamOut, status_code=201)
+@router.post(
+    "",
+    response_model=TeamOut,
+    status_code=201,
+    responses={401: {"model": ErrorOut}},
+)
 def create_team(team_in: TeamCreate):
     """
     Создать команду с составом.
-    В чате просили возвращать код 201 при создании.
     """
     return TeamOut(
         id=1,
@@ -37,7 +42,7 @@ def create_team(team_in: TeamCreate):
     )
 
 
-@router.get("/{team_id}", response_model=TeamOut)
+@router.get("/{team_id}", response_model=TeamOut, responses={404: {"model": ErrorOut}})
 def get_team(team_id: int):
     """Профиль команды."""
     return TeamOut(
@@ -54,7 +59,10 @@ def get_team(team_id: int):
 
 
 @tournaments_router.post(
-    "/{tournament_id}/registrations", response_model=RegistrationOut, status_code=201
+    "/{tournament_id}/registrations",
+    response_model=RegistrationOut,
+    status_code=201,
+    responses={401: {"model": ErrorOut}, 404: {"model": ErrorOut}},
 )
 def register_team_for_tournament(tournament_id: int, reg_in: RegistrationCreate):
     """Заявить команду на турнир."""
@@ -62,7 +70,13 @@ def register_team_for_tournament(tournament_id: int, reg_in: RegistrationCreate)
 
 
 @tournaments_router.patch(
-    "/{tournament_id}/registrations/{team_id}", response_model=RegistrationOut
+    "/{tournament_id}/registrations/{team_id}",
+    response_model=RegistrationOut,
+    responses={
+        401: {"model": ErrorOut},
+        403: {"model": ErrorOut},
+        404: {"model": ErrorOut},
+    },
 )
 def update_registration_status(
     tournament_id: int, team_id: int, registration_in: RegistrationUpdate

@@ -19,7 +19,7 @@ next-env.d.ts
 
 # IDE и система
 .idea/
-.vscode/*
-!.vscode/extensions.json
+**/.vscode/*
+!**/.vscode/extensions.json
 .DS_Store
 Thumbs.db
