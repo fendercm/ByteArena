@@ -1,12 +1,16 @@
+from datetime import UTC, datetime, timedelta
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 client = TestClient(app)
 
+# дата считается от сегодняшнего дня, иначе тест сломается, когда она окажется в прошлом
 NEW_TOURNAMENT = {
     "title": "Autumn Championship 2026",
-    "starts_at": "2026-11-05T18:00:00+03:00",
+    "starts_at": (datetime.now(UTC) + timedelta(days=7)).isoformat(),
     "max_teams": 8,
 }
 
@@ -30,12 +34,37 @@ def test_create_tournament() -> None:
 
 
 def test_create_tournament_rejects_date_without_timezone() -> None:
-    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "starts_at": "2026-11-05T18:00"})
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "starts_at": "2030-01-01T18:00"})
     assert response.status_code == 422
 
 
-def test_create_tournament_rejects_single_team() -> None:
-    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "max_teams": 1})
+def test_create_tournament_rejects_date_in_past() -> None:
+    yesterday = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "starts_at": yesterday})
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "starts_at"]
+
+
+def test_create_tournament_rejects_blank_title() -> None:
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "title": "   "})
+    assert response.status_code == 422
+
+
+def test_create_tournament_strips_title() -> None:
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "title": "  Cup  "})
+    assert response.status_code == 201
+    assert response.json()["title"] == "Cup"
+
+
+@pytest.mark.parametrize("max_teams", [4, 8, 16])
+def test_create_tournament_accepts_bracket_sizes(max_teams: int) -> None:
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "max_teams": max_teams})
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("max_teams", [1, 2, 6, 32])
+def test_create_tournament_rejects_other_team_counts(max_teams: int) -> None:
+    response = client.post("/tournaments", json={**NEW_TOURNAMENT, "max_teams": max_teams})
     assert response.status_code == 422
 
 
