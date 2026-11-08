@@ -1,0 +1,13 @@
+# Сервер: Caddy сам получает и продлевает сертификат Let's Encrypt для домена из DOMAIN (.env).
+# Для этого домен должен указывать на сервер, а порты 80 и 443 быть открыты.
+# Маршруты те же, что в Caddyfile: /api/* уходит в FastAPI (префикс /api срезается), остальное — в Next.js
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle_path /api/* {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
