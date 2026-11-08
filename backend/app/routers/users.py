@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from app.auth.dependencies import CurrentUser
+from app.models.user import User
 from app.schemas.auth import UserMeOut
 from app.schemas.common import ErrorOut
 from app.schemas.user import UserProfileOut
@@ -8,8 +10,9 @@ router = APIRouter(prefix="", tags=["users"])
 
 
 @router.get("/me", response_model=UserMeOut, responses={401: {"model": ErrorOut}})
-def get_current_user():
-    return UserMeOut(id=1, nickname="Fedor", avatar_url="https://example.com/avatar.png")
+def read_me(user: CurrentUser) -> User:
+    """Кто сейчас вошёл. Без входа — 401."""
+    return user
 
 
 @router.get(

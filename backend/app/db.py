@@ -1,6 +1,8 @@
 from collections.abc import Iterator
 from datetime import datetime
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy import DateTime, MetaData, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -32,3 +34,7 @@ def get_db() -> Iterator[Session]:
         yield db
     finally:
         db.close()
+
+
+# В роутах писать `db: DbSession` вместо `db: Session = Depends(get_db)`
+DbSession = Annotated[Session, Depends(get_db)]
