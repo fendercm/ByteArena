@@ -42,8 +42,37 @@
           "tournaments"
         ],
         "summary": "List Tournaments",
-        "description": "Список турниров для главной.",
+        "description": "Список турниров для главной: ближайшие сначала.",
         "operationId": "list_tournaments_tournaments_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "draft",
+                      "registration",
+                      "running",
+                      "finished"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Только эти статусы, например ?status=running",
+              "title": "Status"
+            },
+            "description": "Только эти статусы, например ?status=running"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -51,6 +80,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TournamentList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -62,17 +101,35 @@
           "tournaments"
         ],
         "summary": "Create Tournament",
-        "description": "Создать турнир. Организатором становится текущий пользователь.",
+        "description": "Создать турнир. Организатор — тот, кто вошёл. Регистрация команд открывается сразу.",
         "operationId": "create_tournament_tournaments_post",
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TournamentCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -86,14 +143,14 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            }
+            },
+            "description": "Unauthorized"
           },
           "422": {
             "description": "Validation Error",
@@ -114,7 +171,7 @@
           "tournaments"
         ],
         "summary": "Get Tournament",
-        "description": "Страница турнира: данные, команды и сетка.",
+        "description": "Страница турнира: данные, команды с заявками и сетка (до старта пустая).",
         "operationId": "get_tournament_tournaments__tournament_id__get",
         "parameters": [
           {

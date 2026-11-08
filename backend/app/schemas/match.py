@@ -1,7 +1,8 @@
 from typing import Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.common import UtcDatetime
 from app.schemas.team import TeamShort
 
 MatchStatus = Literal["scheduled", "live", "finished"]
@@ -9,6 +10,8 @@ MatchStatus = Literal["scheduled", "live", "finished"]
 
 class MatchOut(BaseModel):
     """Матч в сетке турнира."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     tournament_id: int
@@ -20,7 +23,7 @@ class MatchOut(BaseModel):
     score2: int | None
     winner_id: int | None
     status: MatchStatus
-    scheduled_at: AwareDatetime | None
+    scheduled_at: UtcDatetime | None
     next_match_id: int | None  # куда уходит победитель; у финала null
 
 
