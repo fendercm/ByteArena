@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.models  # noqa: F401  — регистрирует все модели в Base.metadata
+from app.auth.security import ACCESS_TOKEN_COOKIE, create_access_token
 from app.config import settings
 from app.db import Base, get_db
 from app.main import app as api
+from app.models.user import User
 
 
 @pytest.fixture
@@ -42,3 +44,19 @@ def auth_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 def client(db: Session, auth_settings: None) -> TestClient:
     """Клиент с базой и настройками входа; запоминает cookie между запросами, как браузер."""
     return TestClient(api, follow_redirects=False)
+
+
+@pytest.fixture
+def user(db: Session) -> User:
+    """Игрок в базе, от имени которого работает logged_in."""
+    player = User(discord_id="100", nickname="Organizer")
+    db.add(player)
+    db.commit()
+    return player
+
+
+@pytest.fixture
+def logged_in(client: TestClient, user: User) -> TestClient:
+    """Клиент, уже вошедший как user: cookie входа выставлена, как после Discord."""
+    client.cookies.set(ACCESS_TOKEN_COOKIE, create_access_token(user.id))
+    return client

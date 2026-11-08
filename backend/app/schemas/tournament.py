@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.common import UtcDatetime
 from app.schemas.match import MatchOut
 from app.schemas.team import TeamShort
 
@@ -33,17 +34,19 @@ class TournamentCreate(BaseModel):
 
 
 class TournamentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     description: str | None
     game: str
-    starts_at: AwareDatetime
+    starts_at: UtcDatetime
     max_teams: int
     teams_count: int  # сколько заявок одобрено; для карточки на главной
     rules: str | None
     status: TournamentStatus
     organizer_id: int
-    created_at: AwareDatetime
+    created_at: UtcDatetime
 
 
 class TournamentList(BaseModel):
