@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     discord_client_id: str = ""
     discord_client_secret: str = ""
     discord_redirect_uri: str = "http://localhost:8080/api/auth/discord/callback"
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
+    debug_auth_enabled: bool = False
+    cookie_secure: bool = True
 
 
 settings = Settings()

@@ -1,0 +1,1 @@
+"""JWT authentication helpers and FastAPI dependencies."""
