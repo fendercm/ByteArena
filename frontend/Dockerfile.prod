@@ -1,0 +1,30 @@
+# Образ для сервера: приложение собирается один раз и запускается без режима разработки.
+# Для разработки по-прежнему Dockerfile (код монтируется из папки).
+
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# NEXT_PUBLIC_* Next.js вписывает в код при сборке, поэтому они приходят как аргументы сборки
+ARG NEXT_PUBLIC_API_MOCKS=false
+ARG NEXT_PUBLIC_DISCORD_URL=
+ENV NEXT_PUBLIC_API_MOCKS=$NEXT_PUBLIC_API_MOCKS \
+    NEXT_PUBLIC_DISCORD_URL=$NEXT_PUBLIC_DISCORD_URL \
+    NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# В итоговый образ попадает только собранный сервер (output: "standalone"), без node_modules
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]

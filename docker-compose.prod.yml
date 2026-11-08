@@ -1,0 +1,70 @@
+# Сервер (https://maxlutcenko.fvds.ru). Обновлять командой ./deploy.sh, а не вручную.
+# Отличия от docker-compose.yml: база не открыта наружу, код не монтируется,
+# бэкенд без --reload, фронтенд собран заранее, Caddy с доменом и https.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # ports нет специально: база доступна только контейнерам внутри.
+    # Порты, открытые Docker, обходят ufw, поэтому закрывать их нужно здесь.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 3s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+
+  backend:
+    build: ./backend
+    env_file: .env
+    # --proxy-headers: бэкенд видит, что снаружи https (важно для редиректов входа через Discord)
+    command: >-
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_MOCKS: ${NEXT_PUBLIC_API_MOCKS:-false}
+        NEXT_PUBLIC_DISCORD_URL: ${NEXT_PUBLIC_DISCORD_URL:-}
+    restart: unless-stopped
+    logging: *logging
+
+  proxy:
+    image: caddy:2
+    environment:
+      DOMAIN: ${DOMAIN:?Укажите DOMAIN в .env, например maxlutcenko.fvds.ru}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      # сертификаты хранятся здесь: без тома Caddy запрашивал бы их заново при каждом перезапуске
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
