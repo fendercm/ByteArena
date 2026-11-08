@@ -1,6 +1,7 @@
+from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.match import MatchOut
 from app.schemas.team import TeamShort
@@ -12,12 +13,23 @@ RegistrationStatus = Literal["pending", "approved", "rejected"]
 class TournamentCreate(BaseModel):
     """Форма создания турнира. id, status и organizer_id задаёт сервер."""
 
+    # пробелы по краям обрезаются до проверки длины: название из одних пробелов не пройдёт
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     title: str = Field(min_length=1, max_length=128)
     description: str | None = None
     game: Literal["cs2"] = "cs2"
     starts_at: AwareDatetime
-    max_teams: int = Field(ge=2)
+    # сетка на выбывание делится пополам без пропусков раунда только при 4, 8 и 16 командах
+    max_teams: Literal[4, 8, 16]
     rules: str | None = None
+
+    @field_validator("starts_at")
+    @classmethod
+    def not_in_past(cls, value: datetime) -> datetime:
+        if value < datetime.now(UTC):
+            raise ValueError("Дата турнира не может быть в прошлом")
+        return value
 
 
 class TournamentOut(BaseModel):
