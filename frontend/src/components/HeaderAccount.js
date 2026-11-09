@@ -3,13 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  discordLoginUrl,
-  getCurrentUser,
-  signInAsDemoUser,
-  signOut,
-  authMocksEnabled,
-} from "@/lib/auth";
+import { discordLoginUrl, getCurrentUser, signOut } from "@/lib/auth";
 
 const buttonClass = "button button-secondary button-small";
 
@@ -40,15 +34,6 @@ export default function HeaderAccount() {
     loadAccount();
     return () => controller.abort();
   }, [attempt]);
-
-  function handleDemoLogin() {
-    try {
-      setUser(signInAsDemoUser());
-      setError("");
-    } catch {
-      setError("Не удалось начать демосессию");
-    }
-  }
 
   async function handleLogout() {
     setLeaving(true);
@@ -95,15 +80,6 @@ export default function HeaderAccount() {
             {leaving ? "Выходим…" : "Выйти"}
           </button>
         </div>
-      ) : authMocksEnabled ? (
-        <button
-          type="button"
-          className={buttonClass}
-          onClick={handleDemoLogin}
-          title="Демонстрационный вход"
-        >
-          Войти через Discord
-        </button>
       ) : (
         <a className={buttonClass} href={discordLoginUrl}>
           Войти через Discord
