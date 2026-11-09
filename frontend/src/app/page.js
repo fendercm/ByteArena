@@ -1,7 +1,6 @@
 import Link from "next/link";
 import DiscordLink from "@/components/DiscordLink";
-import TournamentList from "@/components/TournamentList";
-import { homeTournaments } from "@/data/home-tournaments";
+import HomeTournaments from "@/components/HomeTournaments";
 
 export default function HomePage() {
   return (
@@ -16,7 +15,7 @@ export default function HomePage() {
           <DiscordLink className="button button-secondary">Наш Discord</DiscordLink>
         </div>
       </section>
-      <TournamentList tournaments={homeTournaments} />
+      <HomeTournaments />
     </>
   );
 }

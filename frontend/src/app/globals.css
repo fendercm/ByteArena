@@ -164,6 +164,28 @@ button:focus-visible {
   display: grid;
   gap: 24px;
 }
+.tournament-sections > .tournament-sections {
+  margin-top: 0;
+}
+.tournament-skeleton {
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.tournament-skeleton span {
+  display: block;
+  height: 18px;
+  margin-block: 12px;
+  border-radius: var(--radius);
+  background: var(--color-border);
+}
+.tournament-skeleton span:first-child {
+  width: 35%;
+}
+.tournament-skeleton span:last-child {
+  width: 65%;
+}
 .section-heading {
   display: flex;
   align-items: center;
