@@ -2,10 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { usePathname, useRouter } from "next/navigation";
+import { loginReturnKey } from "./TournamentLoginLink";
 
 const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,6 +29,21 @@ export default function AuthProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Текущий OAuth callback возвращает на главную и не принимает параметр next.
+  // Восстанавливаем только известный маршрут формы в этой же вкладке.
+  useEffect(() => {
+    if (loading || error) return;
+    try {
+      const expires = Number(sessionStorage.getItem(loginReturnKey));
+      sessionStorage.removeItem(loginReturnKey);
+      if (user && pathname === "/" && expires > Date.now()) {
+        router.replace("/tournaments/new");
+      }
+    } catch {
+      // Запрет sessionStorage не мешает авторизации.
+    }
+  }, [user, loading, error, pathname, router]);
 
   async function logout() {
     await api.logout();

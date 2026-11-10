@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { api, fieldErrors } from "@/lib/api";
+import TournamentLoginLink from "@/components/TournamentLoginLink";
+import "../tournaments.css";
 
 const initial = { title: "", starts_at: "", max_teams: 8, rules: "" };
 const storageKey = "bytearena-tournament-draft";
@@ -97,10 +99,11 @@ export default function CreateTournamentPage() {
       if (err.status === 401) {
         setRequiresLogin(true);
         setError("Сессия истекла. Войдите ещё раз — черновик сохранён в этой вкладке.");
+        refresh();
       } else if (err.status === 422) {
         const fields = fieldErrors(err);
         setErrors(fields);
-        setError("Проверьте заполненные поля.");
+        setError(Object.keys(fields).length ? "Проверьте заполненные поля." : err.message);
         document.getElementById(Object.keys(fields)[0])?.focus();
       } else {
         setError(err.status ? err.message : "Не удалось связаться с сервером. Попробуйте ещё раз.");
@@ -122,7 +125,7 @@ export default function CreateTournamentPage() {
   }
 
   return (
-    <section className="page-stack">
+    <section className="tournament-page page-stack">
       <div>
         <Link className="back-link" href="/">
           ← Турниры
@@ -149,9 +152,7 @@ export default function CreateTournamentPage() {
               {error}
             </p>
           )}
-          <a className="button" href="/api/auth/discord/login?next=/tournaments/new">
-            Войти через Discord
-          </a>
+          <TournamentLoginLink />
         </div>
       ) : (
         <form className="panel tournament-form" onSubmit={submit} noValidate aria-busy={pending}>

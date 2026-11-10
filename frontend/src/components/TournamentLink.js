@@ -25,7 +25,7 @@ export default function TournamentLink({ id }) {
       <label htmlFor="tournament-url">Ссылка на турнир</label>
       <div className="copy-row">
         <input ref={input} id="tournament-url" readOnly value={url} />
-        <button className="button secondary" onClick={copy} disabled={!url}>
+        <button className="button button-secondary" onClick={copy} disabled={!url}>
           Скопировать
         </button>
       </div>

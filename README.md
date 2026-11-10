@@ -106,6 +106,29 @@ docker compose down              # остановить
 docker compose down -v           # остановить и стереть базу
 ```
 
+## Сервер
+
+Сайт: https://bytearena.duckdns.org (IP 188.120.249.77). Имя `maxlutcenko.fvds.ru` для https не подходит: у него нет записи в DNS, а лимит Let's Encrypt на общий домен `fvds.ru` исчерпан. На сервере Ubuntu 24.04 и 1 ГБ памяти, вход по SSH-ключу пользователем `deploy`.
+
+Для сервера свои файлы: `docker-compose.prod.yml`, `Caddyfile.prod` и `frontend/Dockerfile.prod`. В них база не открыта наружу, код не монтируется, фронтенд собран заранее, а Caddy сам получает сертификат https для домена.
+
+Первый запуск, один раз:
+
+```bash
+git clone https://github.com/fendercm/ByteArena.git
+cd ByteArena
+cp .env.example .env   # заполнить: DOMAIN, свой POSTGRES_PASSWORD (и его же в DATABASE_URL), DISCORD_*, свой JWT_SECRET, COOKIE_SECURE=true, NEXT_PUBLIC_API_MOCKS=false
+sh deploy.sh
+```
+
+Обновление после слияния в main — одна команда со своего компьютера:
+
+```bash
+ssh deploy@188.120.249.77 "cd ByteArena && sh deploy.sh"
+```
+
+Логи на сервере: `docker compose -f docker-compose.prod.yml logs -f backend`.
+
 
 ## Возможные проблемы и решения (Troubleshooting)
 
@@ -176,6 +199,8 @@ ByteArena/
 ├── frontend/           Next.js (App Router, JavaScript)
 ├── docker-compose.yml  база, бэкенд, фронтенд и прокси Caddy
 ├── Caddyfile           /api/* → бэкенд, остальное → фронтенд
+├── docker-compose.prod.yml, Caddyfile.prod   то же для сервера, с https
+├── deploy.sh           обновить сервер одной командой
 ├── .env.example        пример переменных окружения
 └── CONTRIBUTING.md     правила работы с кодом и Git
 ```

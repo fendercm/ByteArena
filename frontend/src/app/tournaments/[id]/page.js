@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import TournamentLink from "@/components/TournamentLink";
 import { api, formatDate } from "@/lib/api";
+import "../tournaments.css";
 
 const statuses = {
   draft: "Черновик",
@@ -21,6 +22,7 @@ export default function TournamentPage({ params }) {
     setCreated(new URLSearchParams(window.location.search).get("created") === "1");
     const controller = new AbortController();
     setError("");
+    setTournament(null);
     api
       .getTournament(params.id, controller.signal)
       .then(setTournament)
@@ -33,7 +35,7 @@ export default function TournamentPage({ params }) {
 
   if (error)
     return (
-      <section className="page-stack">
+      <section className="tournament-page page-stack">
         <h1>{error}</h1>
         <button className="button" onClick={() => setAttempt((n) => n + 1)}>
           Повторить
@@ -44,7 +46,7 @@ export default function TournamentPage({ params }) {
   if (!tournament) return <p role="status">Загружаем турнир…</p>;
 
   return (
-    <section className="page-stack">
+    <section className="tournament-page page-stack">
       <Link className="back-link" href="/">
         ← Все турниры
       </Link>
@@ -55,7 +57,7 @@ export default function TournamentPage({ params }) {
       )}
       <div className="title-row">
         <h1>{tournament.title}</h1>
-        <span className="badge">{statuses[tournament.status]}</span>
+        <span className={`badge badge-${tournament.status}`}>{statuses[tournament.status]}</span>
       </div>
       <div className="panel tournament-meta">
         <div>
