@@ -1,8 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // для сервера: next build собирает самодостаточный сервер в .next/standalone (см. Dockerfile.prod)
+
+  // Для сервера: next build собирает самодостаточный сервер
   output: "standalone",
+
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.alias["msw/browser"] = false;
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;
