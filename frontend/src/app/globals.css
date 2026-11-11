@@ -116,6 +116,45 @@ main.container {
   margin-left: auto;
   gap: 24px;
 }
+.header-account {
+  min-width: 0;
+}
+.header-account-controls,
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-profile {
+  min-width: 0;
+}
+.header-avatar {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #2d191d;
+  color: #f08089;
+  font-size: 12px;
+  font-weight: 800;
+}
+.header-avatar img {
+  object-fit: cover;
+}
+.header-nickname {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-account-error {
+  margin-top: 4px;
+  color: var(--color-error);
+  font-size: 12px;
+}
 .button {
   display: inline-flex;
   align-items: center;
@@ -347,6 +386,9 @@ button:focus-visible {
   }
   .header-actions {
     gap: 12px;
+  }
+  .header-nickname {
+    max-width: 100px;
   }
   .main-nav {
     gap: 24px;
