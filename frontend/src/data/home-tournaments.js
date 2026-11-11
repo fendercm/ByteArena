@@ -1,4 +1,4 @@
-// Данные для вёрстки по макету. Заменяются клиентом API после интеграции.
+// Демонстрационные ответы для NEXT_PUBLIC_API_MOCKS=true.
 export const homeTournaments = [
   {
     id: 24,
