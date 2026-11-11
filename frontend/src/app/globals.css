@@ -311,8 +311,27 @@ button:focus-visible {
   color: #f08089;
 }
 .badge-running {
-  background: #262629;
-  color: var(--color-success);
+  background: #2d191d;
+  color: #f08089;
+}
+.badge-running::before {
+  animation: running-dot-blink 1.2s ease-in-out infinite;
+}
+@keyframes running-dot-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(240 128 137 / 55%);
+  }
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 0 4px rgb(240 128 137 / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-running::before {
+    animation: none;
+  }
 }
 .badge-finished {
   background: #28282c;
