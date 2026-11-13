@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,9 +21,7 @@ export default function UserPage({ params }) {
       try {
         const data = await getUserProfile(params.id);
 
-        if (!cancelled) {
-          setUser(data);
-        }
+        if (!cancelled) setUser(data);
       } catch (err) {
         console.error("Profile loading error:", err);
 
@@ -36,9 +33,7 @@ export default function UserPage({ params }) {
           }
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -119,11 +114,10 @@ export default function UserPage({ params }) {
 
       <div>
         <h2>Турниры</h2>
-
         {user.tournaments?.length > 0 ? (
           <ul>
             {user.tournaments.map((tournament) => (
-              <li key={tournament.id}>{tournament.name}</li>
+              <li key={tournament.id}>{tournament.title}</li>
             ))}
           </ul>
         ) : (
