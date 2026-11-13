@@ -116,6 +116,45 @@ main.container {
   margin-left: auto;
   gap: 24px;
 }
+.header-account {
+  min-width: 0;
+}
+.header-account-controls,
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-profile {
+  min-width: 0;
+}
+.header-avatar {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #2d191d;
+  color: #f08089;
+  font-size: 12px;
+  font-weight: 800;
+}
+.header-avatar img {
+  object-fit: cover;
+}
+.header-nickname {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-account-error {
+  margin-top: 4px;
+  color: var(--color-error);
+  font-size: 12px;
+}
 .button {
   display: inline-flex;
   align-items: center;
@@ -163,6 +202,28 @@ button:focus-visible {
   margin-top: 40px;
   display: grid;
   gap: 24px;
+}
+.tournament-sections > .tournament-sections {
+  margin-top: 0;
+}
+.tournament-skeleton {
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.tournament-skeleton span {
+  display: block;
+  height: 18px;
+  margin-block: 12px;
+  border-radius: var(--radius);
+  background: var(--color-border);
+}
+.tournament-skeleton span:first-child {
+  width: 35%;
+}
+.tournament-skeleton span:last-child {
+  width: 65%;
 }
 .section-heading {
   display: flex;
@@ -250,8 +311,27 @@ button:focus-visible {
   color: #f08089;
 }
 .badge-running {
-  background: #262629;
-  color: var(--color-success);
+  background: #2d191d;
+  color: #f08089;
+}
+.badge-running::before {
+  animation: running-dot-blink 1.2s ease-in-out infinite;
+}
+@keyframes running-dot-blink {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(240 128 137 / 55%);
+  }
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 0 4px rgb(240 128 137 / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-running::before {
+    animation: none;
+  }
 }
 .badge-finished {
   background: #28282c;
@@ -325,6 +405,9 @@ button:focus-visible {
   }
   .header-actions {
     gap: 12px;
+  }
+  .header-nickname {
+    max-width: 100px;
   }
   .main-nav {
     gap: 24px;

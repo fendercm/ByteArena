@@ -18,6 +18,7 @@ class TeamMember(Base):
             "team_id",
             unique=True,
             postgresql_where=text("role = 'captain'"),
+            sqlite_where=text("role = 'captain'"),
         ),
     )
 

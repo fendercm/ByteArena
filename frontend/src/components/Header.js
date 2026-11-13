@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DiscordLink from "@/components/DiscordLink";
+import HeaderAccount from "@/components/HeaderAccount";
 
 export default function Header() {
   return (
@@ -18,9 +19,7 @@ export default function Header() {
         </nav>
         <div className="header-actions">
           <DiscordLink className="discord-nav">Discord</DiscordLink>
-          <a className="button button-secondary button-small" href="/api/auth/discord/login">
-            Войти
-          </a>
+          <HeaderAccount />
         </div>
       </div>
     </header>
