@@ -42,11 +42,17 @@ def seed_data(db: Session) -> dict[str, int]:
             db.flush()
             counts["teams"] += 1
         for position, player in enumerate(roster):
-            if db.get(TeamMember, (team.id, player.id)) is None:
+            member = db.scalar(
+                select(TeamMember).where(
+                    TeamMember.team_id == team.id, TeamMember.user_id == player.id
+                )
+            )
+            if member is None:
                 db.add(
                     TeamMember(
                         team_id=team.id,
                         user_id=player.id,
+                        nickname=player.nickname,
                         role="captain" if position == 0 else "main",
                     )
                 )
@@ -84,7 +90,13 @@ def seed_data(db: Session) -> dict[str, int]:
             db.flush()
             counts["tournaments"] += 1
         for team in teams[:approved]:
-            if db.get(TournamentTeam, (tournament.id, team.id)) is None:
+            registration = db.scalar(
+                select(TournamentTeam).where(
+                    TournamentTeam.tournament_id == tournament.id,
+                    TournamentTeam.team_id == team.id,
+                )
+            )
+            if registration is None:
                 db.add(
                     TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved")
                 )
