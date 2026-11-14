@@ -52,6 +52,11 @@ export function formatDate(value) {
   }).format(new Date(value));
 }
 
+// Профиль игрока. Ошибка — ApiError: для несуществующего игрока error.status === 404
+export function getUserProfile(id) {
+  return request(`/users/${encodeURIComponent(id)}`);
+}
+
 export async function getTournaments(status, signal) {
   if (process.env.NEXT_PUBLIC_API_MOCKS === "true") {
     const { homeTournaments } = await import("@/data/home-tournaments");
@@ -59,13 +64,14 @@ export async function getTournaments(status, signal) {
     return { items, total: items.length };
   }
 
-  const response = await fetch(`/api/tournaments?status=${encodeURIComponent(status)}`, {
-    credentials: "same-origin",
+  const data = await request(`/tournaments?status=${encodeURIComponent(status)}`, {
     cache: "no-store",
     signal,
   });
-  if (!response.ok) throw new Error("Не удалось загрузить турниры");
-  const data = await response.json();
-  if (!Array.isArray(data.items)) throw new Error("Некорректный список турниров");
+
+  if (!Array.isArray(data.items)) {
+    throw new Error("Некорректный список турниров");
+  }
+
   return data;
 }
