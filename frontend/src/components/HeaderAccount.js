@@ -1,48 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { discordLoginUrl, getCurrentUser, signOut } from "@/lib/auth";
+import { discordLoginUrl } from "@/lib/auth";
+
+import { useAuth } from "@/components/AuthProvider";
 
 const buttonClass = "button button-secondary button-small";
 
 export default function HeaderAccount() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, error, refresh, logout } = useAuth();
   const [leaving, setLeaving] = useState(false);
-  const [error, setError] = useState("");
+  const [logoutError, setLogoutError] = useState("");
   const [failedAvatar, setFailedAvatar] = useState(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-
-    async function loadAccount() {
-      try {
-        const account = await getCurrentUser(controller.signal);
-        if (!controller.signal.aborted) setUser(account);
-      } catch {
-        if (!controller.signal.aborted) setError("Не удалось проверить вход");
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }
-
-    loadAccount();
-    return () => controller.abort();
-  }, [attempt]);
 
   async function handleLogout() {
     setLeaving(true);
-    setError("");
+    setLogoutError("");
     try {
-      await signOut();
-      setUser(null);
+      await logout();
     } catch {
-      setError("Не удалось выйти. Попробуй ещё раз.");
+      setLogoutError("Не удалось выйти. Попробуй ещё раз.");
     } finally {
       setLeaving(false);
     }
@@ -85,14 +64,14 @@ export default function HeaderAccount() {
           Войти через Discord
         </a>
       )}
-      {error && (
+      {(error || logoutError) && (
         <p className="header-account-error" role="status">
-          {error}
+          {error || logoutError}
           {!user && (
             <button
               type="button"
               className={buttonClass}
-              onClick={() => setAttempt((value) => value + 1)}
+              onClick={refresh}
             >
               Повторить
             </button>

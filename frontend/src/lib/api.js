@@ -1,44 +1,58 @@
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
-const API_PREFIX = "/api";
-
-async function request(endpoint, options = {}) {
-  const normalizedEndpoint = endpoint.startsWith("/")
-    ? endpoint
-    : `/${endpoint}`;
-
-  const response = await fetch(
-    `${API_URL}${API_PREFIX}${normalizedEndpoint}`,
-    {
-      credentials: "include",
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const error = new Error(`API error: ${response.status}`);
-    error.status = response.status;
-    throw error;
+export class ApiError extends Error {
+  constructor(status, detail) {
+    super(typeof detail === "string" ? detail : "Проверьте заполненные поля");
+    this.status = status;
+    this.detail = detail;
   }
-
-  if (response.status === 204) return null;
-
-  return response.json();
 }
 
-export function getCurrentUser() {
-  return request("/me");
-}
-
-export function logout() {
-  return request("/auth/logout", {
-    method: "POST",
+async function request(path, options = {}) {
+  const response = await fetch(`/api${path}`, {
+    credentials: "include",
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
   });
+  if (response.status === 204) return null;
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new ApiError(response.status, body?.detail ?? "Сервер недоступен");
+  if (body === null) throw new ApiError(502, "Сервер вернул неожиданный ответ");
+  return body;
 }
 
+export const api = {
+  getMe: () => request("/me"),
+  logout: () => request("/auth/logout", { method: "POST" }),
+  getTournaments: (signal) => request("/tournaments", { signal }),
+  getTournament: (id, signal) => request(`/tournaments/${encodeURIComponent(id)}`, { signal }),
+  createTournament: (data) =>
+    request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
+};
+
+export function fieldErrors(error) {
+  if (!Array.isArray(error.detail)) return {};
+  const errors = {};
+  for (const item of error.detail) {
+    const field = item.loc?.[1];
+    if (!field || errors[field]) continue;
+    const messages = {
+      title: "Введите название от 1 до 128 символов",
+      starts_at: "Укажите будущую дату и время начала",
+      max_teams: "Выберите 4, 8 или 16 команд",
+    };
+    errors[field] = messages[field] ?? "Проверьте значение поля";
+  }
+  return errors;
+}
+
+export function formatDate(value) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Europe/Moscow",
+  }).format(new Date(value));
+}
+
+// Профиль игрока. Ошибка — ApiError: для несуществующего игрока error.status === 404
 export function getUserProfile(id) {
   return request(`/users/${encodeURIComponent(id)}`);
 }
@@ -46,19 +60,14 @@ export function getUserProfile(id) {
 export async function getTournaments(status, signal) {
   if (process.env.NEXT_PUBLIC_API_MOCKS === "true") {
     const { homeTournaments } = await import("@/data/home-tournaments");
-    const items = homeTournaments.filter(
-      (tournament) => tournament.status === status,
-    );
+    const items = homeTournaments.filter((tournament) => tournament.status === status);
     return { items, total: items.length };
   }
 
-  const data = await request(
-    `/tournaments?status=${encodeURIComponent(status)}`,
-    {
-      cache: "no-store",
-      signal,
-    },
-  );
+  const data = await request(`/tournaments?status=${encodeURIComponent(status)}`, {
+    cache: "no-store",
+    signal,
+  });
 
   if (!Array.isArray(data.items)) {
     throw new Error("Некорректный список турниров");
