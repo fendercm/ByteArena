@@ -4,7 +4,6 @@ from app.schemas.common import ErrorOut
 from app.schemas.team import (
     RegistrationCreate,
     RegistrationOut,
-    RegistrationUpdate,
     TeamCreate,
     TeamMemberOut,
     TeamOut,
@@ -67,26 +66,3 @@ def get_team(team_id: int):
 def register_team_for_tournament(tournament_id: int, reg_in: RegistrationCreate):
     """Заявить команду на турнир."""
     return RegistrationOut(tournament_id=tournament_id, team_id=reg_in.team_id, status="pending")
-
-
-@tournaments_router.patch(
-    "/{tournament_id}/registrations/{team_id}",
-    response_model=RegistrationOut,
-    responses={
-        401: {"model": ErrorOut},
-        403: {"model": ErrorOut},
-        404: {"model": ErrorOut},
-    },
-)
-def update_registration_status(
-    tournament_id: int, team_id: int, registration_in: RegistrationUpdate
-):
-    """
-    Подтвердить или отклонить заявку.
-    Статус передается в теле запроса.
-    """
-    return RegistrationOut(
-        tournament_id=tournament_id,
-        team_id=team_id,
-        status=registration_in.status,
-    )

@@ -57,6 +57,7 @@
                     "enum": [
                       "draft",
                       "registration",
+                      "closed",
                       "running",
                       "finished"
                     ],
@@ -725,6 +726,7 @@
           "users"
         ],
         "summary": "Get User Profile",
+        "description": "Публичный профиль игрока с его командой и турнирами.",
         "operationId": "get_user_profile_users__user_id__get",
         "parameters": [
           {
@@ -947,16 +949,14 @@
             }
           }
         }
-      }
-    },
-    "/tournaments/{tournament_id}/registrations/{team_id}": {
-      "patch": {
+      },
+      "get": {
         "tags": [
-          "tournaments"
+          "registrations"
         ],
-        "summary": "Update Registration Status",
-        "description": "Подтвердить или отклонить заявку.\nСтатус передается в теле запроса.",
-        "operationId": "update_registration_status_tournaments__tournament_id__registrations__team_id__patch",
+        "summary": "List Registrations",
+        "description": "Все заявки турнира с составами и статусами в порядке подачи. Только организатор.",
+        "operationId": "list_registrations_tournaments__tournament_id__registrations_get",
         "parameters": [
           {
             "name": "tournament_id",
@@ -968,12 +968,108 @@
             }
           },
           {
-            "name": "team_id",
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationAdminList"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Это может только организатор турнира",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/registrations/{registration_id}": {
+      "patch": {
+        "tags": [
+          "registrations"
+        ],
+        "summary": "Decide Registration",
+        "description": "Подтвердить или отклонить заявку. Только организатор, пока регистрация открыта.",
+        "operationId": "decide_registration_registrations__registration_id__patch",
+        "parameters": [
+          {
+            "name": "registration_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Team Id"
+              "title": "Registration Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
             }
           }
         ],
@@ -993,7 +1089,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RegistrationOut"
+                  "$ref": "#/components/schemas/RegistrationAdminOut"
                 }
               }
             }
@@ -1009,14 +1105,14 @@
             "description": "Unauthorized"
           },
           "403": {
+            "description": "Это может только организатор турнира",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
             "content": {
@@ -1027,6 +1123,115 @@
               }
             },
             "description": "Not Found"
+          },
+          "409": {
+            "description": "«Мест нет» или «Регистрация закрыта»",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournament_id}/close-registration": {
+      "post": {
+        "tags": [
+          "registrations"
+        ],
+        "summary": "Close Registration",
+        "description": "Закрыть регистрацию: статус registration → closed. Нужно минимум 2 подтверждённые команды.",
+        "operationId": "close_registration_tournaments__tournament_id__close_registration_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Это может только организатор турнира",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Регистрация уже закрыта или подтверждено меньше 2 команд",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1362,6 +1567,68 @@
         "title": "MatchResultIn",
         "description": "Счёт от организатора. Победителя бэкенд определяет сам: у кого счёт больше."
       },
+      "RegistrationAdminList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RegistrationAdminOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "RegistrationAdminList"
+      },
+      "RegistrationAdminOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "tournament_id": {
+            "type": "integer",
+            "title": "Tournament Id"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamShort"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/RegistrationMemberOut"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tournament_id",
+          "team",
+          "status",
+          "members"
+        ],
+        "title": "RegistrationAdminOut",
+        "description": "Заявка в панели организатора: команда, её состав и статус."
+      },
       "RegistrationCreate": {
         "properties": {
           "team_id": {
@@ -1374,6 +1641,42 @@
           "team_id"
         ],
         "title": "RegistrationCreate"
+      },
+      "RegistrationMemberOut": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "captain",
+              "main",
+              "sub"
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
+          "user_id",
+          "role"
+        ],
+        "title": "RegistrationMemberOut",
+        "description": "Место в составе: user_id есть у зарегистрированного игрока, у ника без аккаунта — null."
       },
       "RegistrationOut": {
         "properties": {
@@ -1670,6 +1973,7 @@
             "enum": [
               "draft",
               "registration",
+              "closed",
               "running",
               "finished"
             ],
@@ -1793,6 +2097,7 @@
             "enum": [
               "draft",
               "registration",
+              "closed",
               "running",
               "finished"
             ],
@@ -1823,6 +2128,24 @@
           "created_at"
         ],
         "title": "TournamentOut"
+      },
+      "TournamentProfileOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "TournamentProfileOut"
       },
       "TournamentTeamOut": {
         "properties": {
@@ -1902,6 +2225,23 @@
               }
             ],
             "title": "Avatar Url"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tournaments": {
+            "items": {
+              "$ref": "#/components/schemas/TournamentProfileOut"
+            },
+            "type": "array",
+            "title": "Tournaments"
           }
         },
         "type": "object",

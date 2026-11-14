@@ -10,7 +10,9 @@ class Tournament(Base):
     __tablename__ = "tournaments"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'registration', 'running', 'finished')", name="status"
+            # closed — регистрация закрыта организатором, турнир ещё не запущен
+            "status IN ('draft', 'registration', 'closed', 'running', 'finished')",
+            name="status",
         ),
         CheckConstraint("max_teams >= 2", name="max_teams"),
     )

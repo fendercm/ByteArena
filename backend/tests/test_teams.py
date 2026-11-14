@@ -45,10 +45,3 @@ def test_register_team_for_tournament() -> None:
     response = client.post("/tournaments/8/registrations", json={"team_id": 5})
     assert response.status_code == 201
     assert response.json() == {"tournament_id": 8, "team_id": 5, "status": "pending"}
-
-
-def test_update_registration_status_requires_valid_body_status() -> None:
-    path = "/tournaments/8/registrations/5"
-    assert client.patch(path, json={"status": "approved"}).status_code == 200
-    assert client.patch(path, json={"status": "lol"}).status_code == 422
-    assert client.patch(path, params={"status": "lol"}).status_code == 422

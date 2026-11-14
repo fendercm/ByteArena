@@ -16,7 +16,7 @@ def test_get_user_profile_returns_database_data(client, db, user) -> None:
     team = Team(name="Night Wolves", captain_id=user.id)
     db.add(team)
     db.flush()
-    db.add(TeamMember(team_id=team.id, user_id=user.id, role="captain"))
+    db.add(TeamMember(team_id=team.id, user_id=user.id, nickname=user.nickname, role="captain"))
 
     tournament = Tournament(
         title="Autumn Championship",

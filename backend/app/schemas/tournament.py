@@ -7,7 +7,7 @@ from app.schemas.common import UtcDatetime
 from app.schemas.match import MatchOut
 from app.schemas.team import TeamShort
 
-TournamentStatus = Literal["draft", "registration", "running", "finished"]
+TournamentStatus = Literal["draft", "registration", "closed", "running", "finished"]
 RegistrationStatus = Literal["pending", "approved", "rejected"]
 
 
