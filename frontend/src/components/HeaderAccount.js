@@ -1,23 +1,29 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { discordLoginUrl } from "@/lib/auth";
+
 import { useAuth } from "@/components/AuthProvider";
+
+const buttonClass = "button button-secondary button-small";
 
 export default function HeaderAccount() {
   const { user, loading, error, refresh, logout } = useAuth();
-  const [pending, setPending] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [failedAvatar, setFailedAvatar] = useState(null);
 
   async function handleLogout() {
-    setPending(true);
+    setLeaving(true);
     setLogoutError("");
     try {
       await logout();
     } catch {
-      setLogoutError("Не удалось выйти. Повторите попытку.");
+      setLogoutError("Не удалось выйти. Попробуй ещё раз.");
     } finally {
-      setPending(false);
+      setLeaving(false);
     }
   }
 
@@ -27,38 +33,50 @@ export default function HeaderAccount() {
         Проверяем вход…
       </span>
     );
-  if (error)
-    return (
-      <button className="button button-secondary button-small" onClick={refresh}>
-        Повторить проверку входа
-      </button>
-    );
-  if (!user)
-    return (
-      <a className="button button-secondary button-small" href="/api/auth/discord/login">
-        Войти
-      </a>
-    );
 
   return (
     <div className="header-account">
-      <Link href={`/users/${user.id}`} className="account-profile">
-        <span className="account-avatar" aria-hidden="true">
-          {user.nickname.slice(0, 1)}
-        </span>
-        <span>{user.nickname}</span>
-      </Link>
-      <button
-        className="button button-secondary button-small"
-        onClick={handleLogout}
-        disabled={pending}
-      >
-        {pending ? "Выходим…" : "Выйти"}
-      </button>
-      {logoutError && (
-        <span className="account-error" role="alert">
-          {logoutError}
-        </span>
+      {user ? (
+        <div className="header-account-controls">
+          <Link href={`/users/${user.id}`} className="header-profile">
+            <span className="header-avatar" aria-hidden="true">
+              {user.avatar_url && user.avatar_url !== failedAvatar ? (
+                <Image
+                  src={user.avatar_url}
+                  alt=""
+                  width={24}
+                  height={24}
+                  unoptimized
+                  onError={() => setFailedAvatar(user.avatar_url)}
+                />
+              ) : (
+                Array.from(user.nickname)[0]?.toUpperCase() || "?"
+              )}
+            </span>
+            <span className="header-nickname">{user.nickname}</span>
+          </Link>
+          <button type="button" className={buttonClass} onClick={handleLogout} disabled={leaving}>
+            {leaving ? "Выходим…" : "Выйти"}
+          </button>
+        </div>
+      ) : (
+        <a className={buttonClass} href={discordLoginUrl}>
+          Войти через Discord
+        </a>
+      )}
+      {(error || logoutError) && (
+        <p className="header-account-error" role="status">
+          {error || logoutError}
+          {!user && (
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={refresh}
+            >
+              Повторить
+            </button>
+          )}
+        </p>
       )}
     </div>
   );

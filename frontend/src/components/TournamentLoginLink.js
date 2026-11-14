@@ -1,5 +1,7 @@
 "use client";
 
+import { discordLoginUrl } from "@/lib/auth";
+
 export const loginReturnKey = "bytearena:return-to-create";
 
 export default function TournamentLoginLink() {
@@ -12,7 +14,7 @@ export default function TournamentLoginLink() {
   }
 
   return (
-    <a className="button" href="/api/auth/discord/login" onClick={rememberReturn}>
+    <a className="button" href={discordLoginUrl} onClick={rememberReturn}>
       Войти через Discord
     </a>
   );
