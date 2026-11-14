@@ -43,9 +43,7 @@ def test_get_user_profile_returns_database_data(client, db, user) -> None:
     assert profile["id"] == user.id
     assert profile["nickname"] == "Organizer"
     assert profile["team"] == {"id": team.id, "name": "Night Wolves"}
-    assert profile["tournaments"] == [
-        {"id": tournament.id, "title": "Autumn Championship"}
-    ]
+    assert profile["tournaments"] == [{"id": tournament.id, "title": "Autumn Championship"}]
 
 
 def test_get_unknown_user_returns_404(client) -> None:
