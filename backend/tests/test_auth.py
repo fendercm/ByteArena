@@ -127,6 +127,7 @@ def test_logout_forgets_user(client: TestClient, fake_discord) -> None:
 def test_debug_login_is_hidden_unless_enabled(
     client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(settings, "debug_auth_enabled", False)
     db.add(User(discord_id="1", nickname="Tester"))
     db.commit()
     assert client.post("/auth/debug-login/1").status_code == 404

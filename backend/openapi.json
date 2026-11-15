@@ -720,6 +720,56 @@
         }
       }
     },
+    "/users/search": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Поиск игроков",
+        "description": "Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
+        "operationId": "search_users_users_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Поисковая строка; минимум 2 символа для подсказок.",
+              "default": "",
+              "title": "Q"
+            },
+            "description": "Поисковая строка; минимум 2 символа для подсказок."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSearchOut"
+                  },
+                  "title": "Response Search Users Users Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users/{user_id}": {
       "get": {
         "tags": [
@@ -778,9 +828,27 @@
         "tags": [
           "teams"
         ],
-        "summary": "Create Team",
-        "description": "Создать команду с составом.",
+        "summary": "Создать команду",
+        "description": "Создаёт mock-команду; X-User-Id задаёт текущего пользователя-капитана.",
         "operationId": "create_team_teams_post",
+        "parameters": [
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -803,7 +871,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized",
+            "description": "Сначала войдите через Discord",
             "content": {
               "application/json": {
                 "schema": {
@@ -825,22 +893,22 @@
         }
       }
     },
-    "/teams/{team_id}": {
+    "/teams/{id}": {
       "get": {
         "tags": [
           "teams"
         ],
-        "summary": "Get Team",
-        "description": "Профиль команды.",
-        "operationId": "get_team_teams__team_id__get",
+        "summary": "Получить команду",
+        "description": "Возвращает mock-профиль команды и её состав.",
+        "operationId": "get_team_teams__id__get",
         "parameters": [
           {
-            "name": "team_id",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Team Id"
+              "title": "Id"
             }
           }
         ],
@@ -855,15 +923,52 @@
               }
             }
           },
-          "404": {
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorOut"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
-            },
-            "description": "Not Found"
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{id}/teams": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Команды турнира",
+        "description": "Возвращает mock-список команд, участвующих в турнире.",
+        "operationId": "list_tournament_teams_tournaments__id__teams_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamOut"
+                  },
+                  "title": "Response List Tournament Teams Tournaments  Id  Teams Get"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -883,8 +988,8 @@
         "tags": [
           "tournaments"
         ],
-        "summary": "Register Team For Tournament",
-        "description": "Заявить команду на турнир.",
+        "summary": "Подать заявку на турнир",
+        "description": "Создаёт mock-заявку команды со статусом pending.",
         "operationId": "register_team_for_tournament_tournaments__tournament_id__registrations_post",
         "parameters": [
           {
@@ -894,6 +999,22 @@
             "schema": {
               "type": "integer",
               "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
             }
           }
         ],
@@ -919,24 +1040,40 @@
             }
           },
           "401": {
+            "description": "Сначала войдите через Discord",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Unauthorized"
+            }
           },
-          "404": {
+          "403": {
+            "description": "Нельзя подать заявку от имени этой команды",
             "content": {
               "application/json": {
+                "example": {
+                  "detail": "Нельзя подать заявку от имени этой команды"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Not Found"
+            }
+          },
+          "409": {
+            "description": "Команда уже зарегистрирована или регистрация закрыта",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Команда уже зарегистрирована или регистрация закрыта"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1024,6 +1161,75 @@
               }
             },
             "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{id}/my-registration": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Моя заявка на турнир",
+        "description": "Возвращает mock-заявку текущего пользователя со статусом approved.",
+        "operationId": "get_my_registration_tournaments__id__my_registration_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Сначала войдите через Discord",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1680,6 +1886,10 @@
       },
       "RegistrationOut": {
         "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
           "tournament_id": {
             "type": "integer",
             "title": "Tournament Id"
@@ -1700,6 +1910,7 @@
         },
         "type": "object",
         "required": [
+          "id",
           "tournament_id",
           "team_id",
           "status"
@@ -1727,17 +1938,19 @@
         "properties": {
           "name": {
             "type": "string",
-            "maxLength": 64,
-            "minLength": 1,
+            "maxLength": 32,
+            "minLength": 2,
             "title": "Name"
           },
           "members": {
             "items": {
-              "$ref": "#/components/schemas/TeamMemberCreate"
+              "$ref": "#/components/schemas/MemberIn"
             },
             "type": "array",
-            "minItems": 1,
-            "title": "Members"
+            "maxItems": 6,
+            "minItems": 4,
+            "title": "Members",
+            "description": "Ровно 4 участника с ролью main и не более 2 с ролью sub; ники должны быть уникальны без учёта регистра."
           }
         },
         "type": "object",
@@ -1745,67 +1958,76 @@
           "name",
           "members"
         ],
-        "title": "TeamCreate"
+        "title": "TeamCreate",
+        "description": "Команда с четырьмя основными игроками и максимум двумя запасными."
       },
-      "TeamMemberCreate": {
+      "MemberIn": {
         "properties": {
-          "user_id": {
-            "type": "integer",
-            "title": "User Id"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "captain",
-              "main",
-              "sub"
-            ],
-            "title": "Role"
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id",
-          "role"
-        ],
-        "title": "TeamMemberCreate"
-      },
-      "TeamMemberOut": {
-        "properties": {
-          "user_id": {
-            "type": "integer",
-            "title": "User Id"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "captain",
-              "main",
-              "sub"
-            ],
-            "title": "Role"
-          },
           "nickname": {
             "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
             "title": "Nickname"
           },
-          "avatar_url": {
+          "user_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Avatar Url"
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "main",
+              "sub"
+            ],
+            "title": "Role"
           }
         },
         "type": "object",
         "required": [
+          "nickname",
+          "role"
+        ],
+        "title": "MemberIn"
+      },
+      "TeamMemberOut": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "captain",
+              "main",
+              "sub"
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
           "user_id",
-          "role",
-          "nickname"
+          "role"
         ],
         "title": "TeamMemberOut"
       },
@@ -1839,6 +2061,24 @@
           "members"
         ],
         "title": "TeamOut"
+      },
+      "UserSearchOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nickname"
+        ],
+        "title": "UserSearchOut"
       },
       "TeamShort": {
         "properties": {

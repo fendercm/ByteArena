@@ -6,6 +6,16 @@ from app.models.tournament import Tournament
 from app.models.tournament_team import TournamentTeam
 
 
+def test_user_search_returns_empty_for_short_queries_and_mock_results_for_long_queries(
+    client,
+) -> None:
+    assert client.get("/users/search", params={"q": "a"}).json() == []
+    response = client.get("/users/search", params={"q": "al"})
+    assert response.status_code == 200
+    assert 2 <= len(response.json()) <= 3
+    assert all(set(user) == {"id", "nickname"} for user in response.json())
+
+
 def test_me_requires_login(client) -> None:
     response = client.get("/me")
     assert response.status_code == 401
