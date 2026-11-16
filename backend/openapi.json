@@ -829,23 +829,23 @@
           "teams"
         ],
         "summary": "Создать команду",
-        "description": "Создаёт mock-команду; X-User-Id задаёт текущего пользователя-капитана.",
+        "description": "Создаёт mock-команду; капитаном становится вошедший пользователь.",
         "operationId": "create_team_teams_post",
         "parameters": [
           {
-            "name": "X-User-Id",
-            "in": "header",
+            "name": "access_token",
+            "in": "cookie",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "X-User-Id"
+              "title": "Access Token"
             }
           }
         ],
@@ -893,22 +893,22 @@
         }
       }
     },
-    "/teams/{id}": {
+    "/teams/{team_id}": {
       "get": {
         "tags": [
           "teams"
         ],
         "summary": "Получить команду",
         "description": "Возвращает mock-профиль команды и её состав.",
-        "operationId": "get_team_teams__id__get",
+        "operationId": "get_team_teams__team_id__get",
         "parameters": [
           {
-            "name": "id",
+            "name": "team_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Id"
+              "title": "Team Id"
             }
           }
         ],
@@ -919,6 +919,19 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TeamOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Команда не найдена",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Команда не найдена"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
                 }
               }
             }
@@ -936,22 +949,22 @@
         }
       }
     },
-    "/tournaments/{id}/teams": {
+    "/tournaments/{tournament_id}/teams": {
       "get": {
         "tags": [
           "tournaments"
         ],
         "summary": "Команды турнира",
         "description": "Возвращает mock-список команд, участвующих в турнире.",
-        "operationId": "list_tournament_teams_tournaments__id__teams_get",
+        "operationId": "list_tournament_teams_tournaments__tournament_id__teams_get",
         "parameters": [
           {
-            "name": "id",
+            "name": "tournament_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Id"
+              "title": "Tournament Id"
             }
           }
         ],
@@ -961,11 +974,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TeamOut"
-                  },
-                  "title": "Response List Tournament Teams Tournaments  Id  Teams Get"
+                  "$ref": "#/components/schemas/TournamentTeamsOut"
                 }
               }
             }
@@ -1002,19 +1011,19 @@
             }
           },
           {
-            "name": "X-User-Id",
-            "in": "header",
+            "name": "access_token",
+            "in": "cookie",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "X-User-Id"
+              "title": "Access Token"
             }
           }
         ],
@@ -1050,12 +1059,10 @@
             }
           },
           "403": {
-            "description": "Нельзя подать заявку от имени этой команды",
+            "description": "Заявку подаёт капитан команды",
             "content": {
               "application/json": {
-                "example": {
-                  "detail": "Нельзя подать заявку от имени этой команды"
-                },
+                "example": {"detail": "Заявку подаёт капитан команды"},
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
@@ -1063,11 +1070,26 @@
             }
           },
           "409": {
-            "description": "Команда уже зарегистрирована или регистрация закрыта",
+            "description": "Регистрация закрыта, мест нет, команда уже подала заявку или игрок уже заявлен",
             "content": {
               "application/json": {
-                "example": {
-                  "detail": "Команда уже зарегистрирована или регистрация закрыта"
+                "examples": {
+                  "registration_closed": {
+                    "summary": "Регистрация закрыта",
+                    "value": {"detail": "Регистрация закрыта"}
+                  },
+                  "no_places": {
+                    "summary": "Мест нет",
+                    "value": {"detail": "Мест нет"}
+                  },
+                  "already_registered": {
+                    "summary": "Команда уже подала заявку",
+                    "value": {"detail": "Команда уже подала заявку"}
+                  },
+                  "player_in_another_team": {
+                    "summary": "Игрок уже заявлен в другой команде",
+                    "value": {"detail": "Игрок {ник} уже заявлен в другой команде"}
+                  }
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
@@ -1175,38 +1197,38 @@
         }
       }
     },
-    "/tournaments/{id}/my-registration": {
+    "/tournaments/{tournament_id}/my-registration": {
       "get": {
         "tags": [
           "tournaments"
         ],
         "summary": "Моя заявка на турнир",
         "description": "Возвращает mock-заявку текущего пользователя со статусом approved.",
-        "operationId": "get_my_registration_tournaments__id__my_registration_get",
+        "operationId": "get_my_registration_tournaments__tournament_id__my_registration_get",
         "parameters": [
           {
-            "name": "id",
+            "name": "tournament_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Id"
+              "title": "Tournament Id"
             }
           },
           {
-            "name": "X-User-Id",
-            "in": "header",
+            "name": "access_token",
+            "in": "cookie",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "X-User-Id"
+              "title": "Access Token"
             }
           }
         ],
@@ -1225,6 +1247,17 @@
             "description": "Сначала войдите через Discord",
             "content": {
               "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена",
+            "content": {
+              "application/json": {
+                "example": {"detail": "Заявка не найдена"},
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
@@ -2062,6 +2095,27 @@
         ],
         "title": "TeamOut"
       },
+      "TournamentTeamsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "TournamentTeamsOut"
+      },
       "UserSearchOut": {
         "properties": {
           "id": {
@@ -2071,6 +2125,17 @@
           "nickname": {
             "type": "string",
             "title": "Nickname"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
           }
         },
         "type": "object",

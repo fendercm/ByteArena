@@ -29,9 +29,9 @@ def search_users(
     if len(q.strip()) < 2:
         return []
     return [
-        UserSearchOut(id=1, nickname="Fedor"),
-        UserSearchOut(id=2, nickname="Ali"),
-        UserSearchOut(id=3, nickname="NightOwl"),
+        UserSearchOut(id=1, nickname="Fedor", avatar_url="https://example.com/avatars/1.png"),
+        UserSearchOut(id=2, nickname="Ali", avatar_url="https://example.com/avatars/2.png"),
+        UserSearchOut(id=3, nickname="NightOwl", avatar_url="https://example.com/avatars/3.png"),
     ]
 
 

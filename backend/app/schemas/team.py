@@ -60,6 +60,11 @@ class TeamOut(TeamShort):
     members: list[TeamMemberOut]
 
 
+class TournamentTeamsOut(BaseModel):
+    items: list[TeamOut]
+    total: int
+
+
 class RegistrationCreate(BaseModel):
     team_id: int
 

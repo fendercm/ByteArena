@@ -1,10 +1,3 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-client = TestClient(app)
-AUTH = {"X-User-Id": "42"}
-
 TEAM = {
     "name": "Night Wolves",
     "members": [
@@ -17,11 +10,11 @@ TEAM = {
 }
 
 
-def test_create_team_with_member_roles() -> None:
-    response = client.post("/teams", json=TEAM, headers=AUTH)
+def test_create_team_with_member_roles(logged_in) -> None:
+    response = logged_in.post("/teams", json=TEAM, headers={"X-User-Id": "999"})
     assert response.status_code == 201
     body = response.json()
-    assert body["captain_id"] == 42
+    assert body["captain_id"] == 1
     assert [member["role"] for member in body["members"]] == [
         "captain",
         "main",
@@ -30,11 +23,11 @@ def test_create_team_with_member_roles() -> None:
         "main",
         "sub",
     ]
-    assert body["members"][0] == {"nickname": "Fedor", "user_id": 42, "role": "captain"}
+    assert body["members"][0] == {"nickname": "Organizer", "user_id": 1, "role": "captain"}
     assert body["members"][3]["user_id"] is None
 
 
-def test_get_team_has_member_profiles() -> None:
+def test_get_team_has_member_profiles(client) -> None:
     response = client.get("/teams/5")
     assert response.status_code == 200
     members = response.json()["members"]
@@ -43,20 +36,17 @@ def test_get_team_has_member_profiles() -> None:
     assert all(member["nickname"] for member in members)
 
 
-def test_create_team_requires_fake_user() -> None:
+def test_create_team_requires_login(client) -> None:
     response = client.post("/teams", json=TEAM)
     assert response.status_code == 401
     assert response.json() == {"detail": "Сначала войдите через Discord"}
 
 
-def test_create_team_validates_name_roster_and_unique_nicknames() -> None:
-    assert client.post("/teams", json={**TEAM, "name": "A"}, headers=AUTH).status_code == 422
-    assert client.post("/teams", json={**TEAM, "name": "x" * 33}, headers=AUTH).status_code == 422
+def test_create_team_validates_name_roster_and_unique_nicknames(logged_in) -> None:
+    assert logged_in.post("/teams", json={**TEAM, "name": "A"}).status_code == 422
+    assert logged_in.post("/teams", json={**TEAM, "name": "x" * 33}).status_code == 422
     assert (
-        client.post(
-            "/teams", json={**TEAM, "members": TEAM["members"][:3]}, headers=AUTH
-        ).status_code
-        == 422
+        logged_in.post("/teams", json={**TEAM, "members": TEAM["members"][:3]}).status_code == 422
     )
     duplicate = {
         **TEAM,
@@ -66,7 +56,7 @@ def test_create_team_validates_name_roster_and_unique_nicknames() -> None:
             *TEAM["members"][2:],
         ],
     }
-    assert client.post("/teams", json=duplicate, headers=AUTH).status_code == 422
+    assert logged_in.post("/teams", json=duplicate).status_code == 422
     too_many_subs = {
         **TEAM,
         "members": [
@@ -75,26 +65,34 @@ def test_create_team_validates_name_roster_and_unique_nicknames() -> None:
             {"nickname": "Golf", "role": "sub"},
         ],
     }
-    assert client.post("/teams", json=too_many_subs, headers=AUTH).status_code == 422
+    assert logged_in.post("/teams", json=too_many_subs).status_code == 422
 
 
-def test_tournament_teams_returns_fake_teams() -> None:
+def test_tournament_teams_returns_fake_teams(client) -> None:
     response = client.get("/tournaments/8/teams")
     assert response.status_code == 200
-    assert 2 <= len(response.json()) <= 3
-    assert all(team["members"] for team in response.json())
+    body = response.json()
+    assert 2 <= len(body["items"]) <= 3
+    assert body["total"] == len(body["items"])
+    assert all(team["members"] for team in body["items"])
 
 
-def test_register_team_for_tournament_requires_user_and_returns_id() -> None:
+def test_register_team_for_tournament_requires_login(client) -> None:
     unauthorized = client.post("/tournaments/8/registrations", json={"team_id": 5})
     assert unauthorized.status_code == 401
 
-    response = client.post("/tournaments/8/registrations", json={"team_id": 5}, headers=AUTH)
+
+def test_register_team_for_tournament_uses_authenticated_user(logged_in) -> None:
+    response = logged_in.post("/tournaments/8/registrations", json={"team_id": 5})
     assert response.status_code == 201
     assert response.json() == {"id": 1, "tournament_id": 8, "team_id": 5, "status": "pending"}
 
 
-def test_my_registration_returns_approved_status() -> None:
-    response = client.get("/tournaments/8/my-registration", headers=AUTH)
+def test_my_registration_requires_login(client) -> None:
+    assert client.get("/tournaments/8/my-registration").status_code == 401
+
+
+def test_my_registration_uses_authenticated_user(logged_in) -> None:
+    response = logged_in.get("/tournaments/8/my-registration", headers={"X-User-Id": "999"})
     assert response.status_code == 200
-    assert response.json() == {"id": 1, "tournament_id": 8, "team_id": 42, "status": "approved"}
+    assert response.json() == {"id": 1, "tournament_id": 8, "team_id": 1, "status": "approved"}

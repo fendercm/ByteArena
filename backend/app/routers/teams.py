@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, status
 
+from app.auth.dependencies import CurrentUser
 from app.schemas.common import ErrorOut
 from app.schemas.team import (
     RegistrationCreate,
@@ -7,6 +8,7 @@ from app.schemas.team import (
     TeamCreate,
     TeamMemberOut,
     TeamOut,
+    TournamentTeamsOut,
 )
 
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -29,62 +31,58 @@ def _fake_team(team_id: int, name: str, captain_id: int) -> TeamOut:
     )
 
 
-def _require_fake_user(user_id: int | None) -> int:
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Сначала войдите через Discord",
-        )
-    return user_id
-
-
 @router.post(
     "",
     response_model=TeamOut,
     status_code=201,
     summary="Создать команду",
-    description="Создаёт mock-команду; X-User-Id задаёт текущего пользователя-капитана.",
+    description="Создаёт mock-команду; капитаном становится вошедший пользователь.",
     responses={401: {"model": ErrorOut, "description": "Сначала войдите через Discord"}},
 )
-def create_team(
-    team_in: TeamCreate,
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
-) -> TeamOut:
+def create_team(team_in: TeamCreate, user: CurrentUser) -> TeamOut:
     """Вернуть переданный состав с фиктивным ID команды."""
-    captain_id = _require_fake_user(x_user_id)
+    captain_id = user.id
     return TeamOut(
         id=1,
         name=team_in.name,
         captain_id=captain_id,
-        members=[TeamMemberOut(nickname="Fedor", user_id=captain_id, role="captain")]
+        members=[TeamMemberOut(nickname=user.nickname, user_id=captain_id, role="captain")]
         + [member.model_dump() for member in team_in.members],
     )
 
 
 @router.get(
-    "/{id}",
+    "/{team_id}",
     response_model=TeamOut,
     summary="Получить команду",
     description="Возвращает mock-профиль команды и её состав.",
+    responses={
+        404: {
+            "model": ErrorOut,
+            "description": "Команда не найдена",
+            "content": {"application/json": {"example": {"detail": "Команда не найдена"}}},
+        }
+    },
 )
-def get_team(id: int) -> TeamOut:
+def get_team(team_id: int) -> TeamOut:
     """Профиль команды с участниками, в том числе без аккаунтов."""
-    return _fake_team(id, "Night Wolves", captain_id=1)
+    return _fake_team(team_id, "Night Wolves", captain_id=1)
 
 
 @tournaments_router.get(
-    "/{id}/teams",
-    response_model=list[TeamOut],
+    "/{tournament_id}/teams",
+    response_model=TournamentTeamsOut,
     summary="Команды турнира",
     description="Возвращает mock-список команд, участвующих в турнире.",
 )
-def list_tournament_teams(id: int) -> list[TeamOut]:
+def list_tournament_teams(tournament_id: int) -> TournamentTeamsOut:
     """Фиктивные команды турнира."""
-    return [
+    items = [
         _fake_team(1, "Night Wolves", captain_id=1),
         _fake_team(2, "Frostbyte", captain_id=5),
         _fake_team(3, "Red Phoenix", captain_id=8),
     ]
+    return TournamentTeamsOut(items=items, total=len(items))
 
 
 @tournaments_router.post(
@@ -97,19 +95,36 @@ def list_tournament_teams(id: int) -> list[TeamOut]:
         401: {"model": ErrorOut, "description": "Сначала войдите через Discord"},
         403: {
             "model": ErrorOut,
-            "description": "Нельзя подать заявку от имени этой команды",
+            "description": "Заявку подаёт капитан команды",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Нельзя подать заявку от имени этой команды"}
-                }
+                "application/json": {"example": {"detail": "Заявку подаёт капитан команды"}}
             },
         },
         409: {
             "model": ErrorOut,
-            "description": "Команда уже зарегистрирована или регистрация закрыта",
+            "description": (
+                "Регистрация закрыта, мест нет, команда уже подала заявку или игрок уже заявлен"
+            ),
             "content": {
                 "application/json": {
-                    "example": {"detail": "Команда уже зарегистрирована или регистрация закрыта"}
+                    "examples": {
+                        "registration_closed": {
+                            "summary": "Регистрация закрыта",
+                            "value": {"detail": "Регистрация закрыта"},
+                        },
+                        "no_places": {
+                            "summary": "Мест нет",
+                            "value": {"detail": "Мест нет"},
+                        },
+                        "already_registered": {
+                            "summary": "Команда уже подала заявку",
+                            "value": {"detail": "Команда уже подала заявку"},
+                        },
+                        "player_in_another_team": {
+                            "summary": "Игрок уже заявлен в другой команде",
+                            "value": {"detail": "Игрок {ник} уже заявлен в другой команде"},
+                        },
+                    }
                 }
             },
         },
@@ -118,26 +133,32 @@ def list_tournament_teams(id: int) -> list[TeamOut]:
 def register_team_for_tournament(
     tournament_id: int,
     reg_in: RegistrationCreate,
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    user: CurrentUser,
 ) -> RegistrationOut:
-    """Вернуть фиктивную заявку; без X-User-Id возвращает 401."""
-    _require_fake_user(x_user_id)
+    """Вернуть фиктивную заявку вошедшего пользователя."""
+    _ = user
     return RegistrationOut(
         id=1, tournament_id=tournament_id, team_id=reg_in.team_id, status="pending"
     )
 
 
 @tournaments_router.get(
-    "/{id}/my-registration",
+    "/{tournament_id}/my-registration",
     response_model=RegistrationOut,
     summary="Моя заявка на турнир",
     description="Возвращает mock-заявку текущего пользователя со статусом approved.",
-    responses={401: {"model": ErrorOut, "description": "Сначала войдите через Discord"}},
+    responses={
+        401: {"model": ErrorOut, "description": "Сначала войдите через Discord"},
+        404: {
+            "model": ErrorOut,
+            "description": "Заявка не найдена",
+            "content": {"application/json": {"example": {"detail": "Заявка не найдена"}}},
+        },
+    },
 )
 def get_my_registration(
-    id: int,
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    tournament_id: int,
+    user: CurrentUser,
 ) -> RegistrationOut:
     """Вернуть фиктивный статус заявки вошедшего пользователя."""
-    user_id = _require_fake_user(x_user_id)
-    return RegistrationOut(id=1, tournament_id=id, team_id=user_id, status="approved")
+    return RegistrationOut(id=1, tournament_id=tournament_id, team_id=user.id, status="approved")
