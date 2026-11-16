@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.auth.dependencies import CurrentUser
@@ -11,9 +11,28 @@ from app.models.user import User
 from app.schemas.auth import UserMeOut
 from app.schemas.common import ErrorOut
 from app.schemas.team import TeamShort
-from app.schemas.user import TournamentProfileOut, UserProfileOut
+from app.schemas.user import TournamentProfileOut, UserProfileOut, UserSearchOut
 
 router = APIRouter(prefix="", tags=["users"])
+
+
+@router.get(
+    "/users/search",
+    response_model=list[UserSearchOut],
+    summary="Поиск игроков",
+    description="Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
+)
+def search_users(
+    q: str = Query(default="", description="Поисковая строка; минимум 2 символа для подсказок."),
+) -> list[UserSearchOut]:
+    """Фиктивные результаты для разработки клиентских подсказок."""
+    if len(q.strip()) < 2:
+        return []
+    return [
+        UserSearchOut(id=1, nickname="Fedor", avatar_url="https://example.com/avatars/1.png"),
+        UserSearchOut(id=2, nickname="Ali", avatar_url="https://example.com/avatars/2.png"),
+        UserSearchOut(id=3, nickname="NightOwl", avatar_url="https://example.com/avatars/3.png"),
+    ]
 
 
 @router.get("/me", response_model=UserMeOut, responses={401: {"model": ErrorOut}})

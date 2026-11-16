@@ -3,6 +3,12 @@ from pydantic import BaseModel, Field
 from app.schemas.team import TeamShort
 
 
+class UserSearchOut(BaseModel):
+    id: int
+    nickname: str
+    avatar_url: str | None = None
+
+
 class TournamentProfileOut(BaseModel):
     id: int
     title: str
