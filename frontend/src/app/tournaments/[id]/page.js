@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import TournamentLink from "@/components/TournamentLink";
+import TournamentRegistration from "@/components/TournamentRegistration";
+import TournamentTeams from "@/components/TournamentTeams";
 import { api, formatDate } from "@/lib/api";
 import "../tournaments.css";
 
 const statuses = {
   draft: "Черновик",
   registration: "Регистрация",
+  closed: "Регистрация закрыта",
   running: "Идёт",
   finished: "Завершён",
 };
@@ -67,7 +70,7 @@ export default function TournamentPage({ params }) {
         <div>
           <span className="muted">Команды</span>
           <p>
-            {tournament.teams_count} / {tournament.max_teams}
+            {tournament.teams_count} из {tournament.max_teams}
           </p>
         </div>
         <div>
@@ -75,6 +78,7 @@ export default function TournamentPage({ params }) {
           <p>Counter-Strike 2</p>
         </div>
       </div>
+      <TournamentRegistration key={tournament.id} tournament={tournament} />
       {tournament.description && (
         <div className="panel">
           <h2>О турнире</h2>
@@ -86,6 +90,9 @@ export default function TournamentPage({ params }) {
         <p className="preserve-lines muted">
           {tournament.rules || "Организатор пока не добавил правила."}
         </p>
+      </div>
+      <div className="panel">
+        <TournamentTeams key={tournament.id} tournament={tournament} />
       </div>
       <div className="panel">
         <TournamentLink id={tournament.id} />
