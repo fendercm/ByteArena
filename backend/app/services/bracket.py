@@ -7,8 +7,16 @@
 Распечатать сетку: python -m app.services.bracket 5
 """
 
+import random
 import sys
 from dataclasses import dataclass
+
+from sqlalchemy import exists, select
+from sqlalchemy.orm import Session
+
+from app.models.match import Match
+from app.models.tournament import Tournament
+from app.models.tournament_team import TournamentTeam
 
 
 @dataclass
@@ -84,6 +92,60 @@ def format_bracket(plan: list[PlannedMatch], names: dict[int, str] | None = None
                 right = slot(m.team2_id, m.round, 2 * m.position)
                 lines.append(f"  {m.round}.{m.position}  {left}  vs  {right}")
     return "\n".join(lines)
+
+
+class BracketError(ValueError):
+    """Сетку построить нельзя; текст ошибки можно показывать пользователю."""
+
+
+def save_bracket(
+    db: Session, tournament: Tournament, rng: random.Random | None = None
+) -> list[Match]:
+    """Построить сетку из подтверждённых команд и сохранить все её матчи.
+
+    Порядок команд перемешивается, чтобы пары не зависели от порядка заявок (rng можно
+    передать в тестах). Матч с проходом без игры сохраняется завершённым, с победителем.
+    Коммит и смену статуса турнира делает вызывающий код — эндпоинт запуска на неделе 4.
+    """
+    if tournament.status != "closed":
+        raise BracketError("Сетку можно построить только после закрытия регистрации")
+    if db.scalar(select(exists().where(Match.tournament_id == tournament.id))):
+        raise BracketError("Сетка уже построена")
+
+    team_ids = list(
+        db.scalars(
+            select(TournamentTeam.team_id)
+            .where(
+                TournamentTeam.tournament_id == tournament.id,
+                TournamentTeam.status == "approved",
+            )
+            .order_by(TournamentTeam.id)
+        )
+    )
+    if len(team_ids) < 2:
+        raise BracketError("Для сетки нужно минимум 2 подтверждённые команды")
+    (rng or random).shuffle(team_ids)
+
+    rows: dict[tuple[int, int], Match] = {}
+    for planned in plan_bracket(team_ids):
+        match = Match(
+            tournament_id=tournament.id,
+            round=planned.round,
+            position=planned.position,
+            team1_id=planned.team1_id,
+            team2_id=planned.team2_id,
+            winner_id=planned.winner_id,
+            status="finished" if planned.is_bye else "scheduled",
+        )
+        db.add(match)
+        rows[(planned.round, planned.position)] = match
+    db.flush()  # у матчей появились id
+
+    for (round_, position), match in rows.items():
+        following = rows.get(next_slot(round_, position)[:2])  # у финала следующего матча нет
+        match.next_match_id = following.id if following else None
+    db.flush()
+    return sorted(rows.values(), key=lambda m: (m.round, m.position))
 
 
 if __name__ == "__main__":
