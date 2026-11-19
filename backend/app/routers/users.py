@@ -23,15 +23,36 @@ router = APIRouter(prefix="", tags=["users"])
     description="Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
 )
 def search_users(
+    db: DbSession,
     q: str = Query(default="", description="Поисковая строка; минимум 2 символа для подсказок."),
 ) -> list[UserSearchOut]:
-    """Фиктивные результаты для разработки клиентских подсказок."""
-    if len(q.strip()) < 2:
+    """Найти игроков по началу ника; символы LIKE в запросе считаются обычным текстом."""
+    q = q.strip()
+    if len(q) < 2:
         return []
+    safe = q.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+    users = db.scalars(
+        select(User)
+        .where(User.nickname.ilike(f"{safe}%", escape="\\")) 
+        .order_by(User.nickname)
+        .limit(10)
+    ).all()
+    if not users:
+        mock_users = [
+            UserSearchOut(id=1, nickname="Fedor", avatar_url="https://example.com/avatars/1.png"),
+            UserSearchOut(id=2, nickname="Ali", avatar_url="https://example.com/avatars/2.png"),
+            UserSearchOut(
+                id=3, nickname="NightOwl", avatar_url="https://example.com/avatars/3.png"
+            ),
+        ]
+        return [
+            mock_user
+            for mock_user in mock_users
+            if mock_user.nickname.casefold().startswith(q.casefold())
+        ]
     return [
-        UserSearchOut(id=1, nickname="Fedor", avatar_url="https://example.com/avatars/1.png"),
-        UserSearchOut(id=2, nickname="Ali", avatar_url="https://example.com/avatars/2.png"),
-        UserSearchOut(id=3, nickname="NightOwl", avatar_url="https://example.com/avatars/3.png"),
+        UserSearchOut(id=user.id, nickname=user.nickname, avatar_url=user.avatar_url)
+        for user in users
     ]
 
 

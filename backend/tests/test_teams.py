@@ -1,3 +1,7 @@
+from app.models.team import Team
+from app.models.team_member import TeamMember
+from app.models.user import User
+
 TEAM = {
     "name": "Night Wolves",
     "members": [
@@ -10,7 +14,17 @@ TEAM = {
 }
 
 
-def test_create_team_with_member_roles(logged_in) -> None:
+def test_create_team_with_member_roles(logged_in, db) -> None:
+    db.add_all(
+        [
+            User(discord_id="201", nickname="Verified Alpha"),
+            User(discord_id="202", nickname="Verified Bravo"),
+            User(discord_id="203", nickname="Unused Player"),
+            User(discord_id="204", nickname="Verified Delta"),
+        ]
+    )
+    db.commit()
+
     response = logged_in.post("/teams", json=TEAM, headers={"X-User-Id": "999"})
     assert response.status_code == 201
     body = response.json()
@@ -25,6 +39,14 @@ def test_create_team_with_member_roles(logged_in) -> None:
     ]
     assert body["members"][0] == {"nickname": "Organizer", "user_id": 1, "role": "captain"}
     assert body["members"][3]["user_id"] is None
+    assert body["members"][1]["nickname"] == "Verified Alpha"
+    assert body["members"][2]["nickname"] == "Verified Bravo"
+    assert body["members"][4]["nickname"] == "Verified Delta"
+
+    team = db.get(Team, body["id"])
+    assert team is not None
+    assert team.name == TEAM["name"]
+    assert len(db.query(TeamMember).filter_by(team_id=team.id).all()) == 6
 
 
 def test_get_team_has_member_profiles(client) -> None:
@@ -40,6 +62,28 @@ def test_create_team_requires_login(client) -> None:
     response = client.post("/teams", json=TEAM)
     assert response.status_code == 401
     assert response.json() == {"detail": "Сначала войдите через Discord"}
+
+
+def test_create_team_rejects_unknown_member_user_id(logged_in) -> None:
+    response = logged_in.post(
+        "/teams",
+        json={**TEAM, "members": [{**TEAM["members"][0], "user_id": 9999}, *TEAM["members"][1:]]},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Игрок с ID 9999 не найден"}
+
+
+def test_create_team_rejects_captain_nickname_duplicate(logged_in) -> None:
+    members = [
+        {**TEAM["members"][0], "nickname": "organizer", "user_id": None},
+        *TEAM["members"][1:],
+    ]
+
+    response = logged_in.post("/teams", json={**TEAM, "members": members})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Ник капитана не должен повторяться в составе"}
 
 
 def test_create_team_validates_name_roster_and_unique_nicknames(logged_in) -> None:
