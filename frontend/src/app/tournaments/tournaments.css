@@ -116,6 +116,34 @@
 .tournament-page .tournament-meta p {
   margin-top: 8px;
 }
+.tournament-page .confirmed-teams {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tournament-page .confirmed-teams li {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.tournament-page .confirmed-teams a {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.tournament-page :is(.badge-closed, .badge-approved) {
+  background: var(--color-inset);
+  color: var(--color-success);
+}
+.tournament-page .badge-pending {
+  background: var(--color-inset);
+  color: var(--color-warning);
+}
+.tournament-page .badge-rejected {
+  background: var(--color-inset);
+  color: var(--color-error);
+}
 .tournament-page .success-notice {
   border-left: 3px solid var(--color-accent);
   padding: 12px 16px;
