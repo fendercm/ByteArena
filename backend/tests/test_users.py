@@ -34,13 +34,11 @@ def test_user_search_escapes_like_wildcards_and_limits_results(client, db) -> No
     assert len(limited_response.json()) == 10
 
 
-def test_user_search_keeps_matching_mock_users_when_database_has_no_match(client) -> None:
+def test_user_search_returns_empty_list_when_database_has_no_match(client) -> None:
     response = client.get("/users/search", params={"q": "fe"})
 
     assert response.status_code == 200
-    assert response.json() == [
-        {"id": 1, "nickname": "Fedor", "avatar_url": "https://example.com/avatars/1.png"}
-    ]
+    assert response.json() == []
 
 
 def test_me_requires_login(client) -> None:

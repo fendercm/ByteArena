@@ -660,6 +660,56 @@
         }
       }
     },
+    "/users/search": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Поиск игроков",
+        "description": "Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
+        "operationId": "search_users_users_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Поисковая строка; минимум 2 символа для подсказок.",
+              "default": "",
+              "title": "Q"
+            },
+            "description": "Поисковая строка; минимум 2 символа для подсказок."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSearchOut"
+                  },
+                  "title": "Response Search Users Users Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me": {
       "get": {
         "tags": [
@@ -706,56 +756,6 @@
               }
             },
             "description": "Unauthorized"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/search": {
-      "get": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Поиск игроков",
-        "description": "Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
-        "operationId": "search_users_users_search_get",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Поисковая строка; минимум 2 символа для подсказок.",
-              "default": "",
-              "title": "Q"
-            },
-            "description": "Поисковая строка; минимум 2 символа для подсказок."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserSearchOut"
-                  },
-                  "title": "Response Search Users Users Search Get"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
@@ -829,7 +829,7 @@
           "teams"
         ],
         "summary": "Создать команду",
-        "description": "Создаёт mock-команду; капитаном становится вошедший пользователь.",
+        "description": "Создаёт команду; капитаном становится вошедший пользователь.",
         "operationId": "create_team_teams_post",
         "parameters": [
           {
@@ -850,14 +850,14 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TeamCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -870,8 +870,42 @@
               }
             }
           },
+          "400": {
+            "description": "Ник капитана повторяется или игрок указан несколько раз",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "captain_nickname_duplicate": {
+                    "summary": "Ник капитана повторяется",
+                    "value": {
+                      "detail": "Ник капитана не должен повторяться в составе"
+                    }
+                  },
+                  "player_duplicate": {
+                    "summary": "Игрок указан несколько раз",
+                    "value": {
+                      "detail": "Игрок указан в составе несколько раз"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Сначала войдите через Discord",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Указанный игрок не найден",
             "content": {
               "application/json": {
                 "schema": {
@@ -1062,7 +1096,9 @@
             "description": "Заявку подаёт капитан команды",
             "content": {
               "application/json": {
-                "example": {"detail": "Заявку подаёт капитан команды"},
+                "example": {
+                  "detail": "Заявку подаёт капитан команды"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
@@ -1076,19 +1112,27 @@
                 "examples": {
                   "registration_closed": {
                     "summary": "Регистрация закрыта",
-                    "value": {"detail": "Регистрация закрыта"}
+                    "value": {
+                      "detail": "Регистрация закрыта"
+                    }
                   },
                   "no_places": {
                     "summary": "Мест нет",
-                    "value": {"detail": "Мест нет"}
+                    "value": {
+                      "detail": "Мест нет"
+                    }
                   },
                   "already_registered": {
                     "summary": "Команда уже подала заявку",
-                    "value": {"detail": "Команда уже подала заявку"}
+                    "value": {
+                      "detail": "Команда уже подала заявку"
+                    }
                   },
                   "player_in_another_team": {
                     "summary": "Игрок уже заявлен в другой команде",
-                    "value": {"detail": "Игрок {ник} уже заявлен в другой команде"}
+                    "value": {
+                      "detail": "Игрок {ник} уже заявлен в другой команде"
+                    }
                   }
                 },
                 "schema": {
@@ -1257,7 +1301,9 @@
             "description": "Заявка не найдена",
             "content": {
               "application/json": {
-                "example": {"detail": "Заявка не найдена"},
+                "example": {
+                  "detail": "Заявка не найдена"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
@@ -1806,6 +1852,41 @@
         "title": "MatchResultIn",
         "description": "Счёт от организатора. Победителя бэкенд определяет сам: у кого счёт больше."
       },
+      "MemberIn": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Nickname"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "main",
+              "sub"
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
+          "role"
+        ],
+        "title": "MemberIn"
+      },
       "RegistrationAdminList": {
         "properties": {
           "items": {
@@ -1980,10 +2061,8 @@
               "$ref": "#/components/schemas/MemberIn"
             },
             "type": "array",
-            "maxItems": 6,
-            "minItems": 4,
             "title": "Members",
-            "description": "Ровно 4 участника с ролью main и не более 2 с ролью sub; ники должны быть уникальны без учёта регистра."
+            "description": "Участники команды: четыре основных и до двух запасных."
           }
         },
         "type": "object",
@@ -1992,42 +2071,7 @@
           "members"
         ],
         "title": "TeamCreate",
-        "description": "Команда с четырьмя основными игроками и максимум двумя запасными."
-      },
-      "MemberIn": {
-        "properties": {
-          "nickname": {
-            "type": "string",
-            "maxLength": 32,
-            "minLength": 2,
-            "title": "Nickname"
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "main",
-              "sub"
-            ],
-            "title": "Role"
-          }
-        },
-        "type": "object",
-        "required": [
-          "nickname",
-          "role"
-        ],
-        "title": "MemberIn"
+        "description": "Данные для создания команды и её состава."
       },
       "TeamMemberOut": {
         "properties": {
@@ -2094,56 +2138,6 @@
           "members"
         ],
         "title": "TeamOut"
-      },
-      "TournamentTeamsOut": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/TeamOut"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total"
-        ],
-        "title": "TournamentTeamsOut"
-      },
-      "UserSearchOut": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "nickname": {
-            "type": "string",
-            "title": "Nickname"
-          },
-          "avatar_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avatar Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "nickname"
-        ],
-        "title": "UserSearchOut"
       },
       "TeamShort": {
         "properties": {
@@ -2481,6 +2475,27 @@
         "title": "TournamentTeamOut",
         "description": "Команда на странице турнира вместе со статусом её заявки."
       },
+      "TournamentTeamsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "TournamentTeamsOut"
+      },
       "UserMeOut": {
         "properties": {
           "id": {
@@ -2555,6 +2570,35 @@
           "nickname"
         ],
         "title": "UserProfileOut"
+      },
+      "UserSearchOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nickname"
+        ],
+        "title": "UserSearchOut"
       },
       "ValidationError": {
         "properties": {

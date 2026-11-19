@@ -88,7 +88,13 @@ def test_create_team_rejects_captain_nickname_duplicate(logged_in) -> None:
 
 def test_create_team_validates_name_roster_and_unique_nicknames(logged_in) -> None:
     assert logged_in.post("/teams", json={**TEAM, "name": "A"}).status_code == 422
+    assert logged_in.post("/teams", json={**TEAM, "name": "  "}).status_code == 422
     assert logged_in.post("/teams", json={**TEAM, "name": "x" * 33}).status_code == 422
+    whitespace_nickname = {
+        **TEAM,
+        "members": [{**TEAM["members"][0], "nickname": "  "}, *TEAM["members"][1:]],
+    }
+    assert logged_in.post("/teams", json=whitespace_nickname).status_code == 422
     assert (
         logged_in.post("/teams", json={**TEAM, "members": TEAM["members"][:3]}).status_code == 422
     )

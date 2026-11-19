@@ -42,7 +42,24 @@ def _fake_team(team_id: int, name: str, captain_id: int) -> TeamOut:
     summary="Создать команду",
     description="Создаёт команду; капитаном становится вошедший пользователь.",
     responses={
-        400: {"model": ErrorOut},
+        400: {
+            "model": ErrorOut,
+            "description": "Ник капитана повторяется или игрок указан несколько раз",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "captain_nickname_duplicate": {
+                            "summary": "Ник капитана повторяется",
+                            "value": {"detail": "Ник капитана не должен повторяться в составе"},
+                        },
+                        "player_duplicate": {
+                            "summary": "Игрок указан несколько раз",
+                            "value": {"detail": "Игрок указан в составе несколько раз"},
+                        },
+                    }
+                }
+            },
+        },
         401: {"model": ErrorOut, "description": "Сначала войдите через Discord"},
         404: {"model": ErrorOut, "description": "Указанный игрок не найден"},
     },
