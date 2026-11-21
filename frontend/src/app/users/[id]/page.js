@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { getUserProfile } from "@/lib/api";
 
 export default function UserPage({ params }) {
@@ -75,11 +77,12 @@ export default function UserPage({ params }) {
     <section>
       <div className="user-profile">
         {user.avatar_url ? (
-          <img
+          <Image
             src={user.avatar_url}
             alt={`Аватар ${user.nickname}`}
             width={120}
             height={120}
+            unoptimized
             style={{
               borderRadius: "50%",
               objectFit: "cover",
@@ -109,7 +112,13 @@ export default function UserPage({ params }) {
 
       <div>
         <h2>Команда</h2>
-        <p>{user.team?.name || "Команда не указана"}</p>
+        {user.team ? (
+          <p>
+            <Link href={`/teams/${user.team.id}`}>{user.team.name}</Link>
+          </p>
+        ) : (
+          <p>Команда не указана</p>
+        )}
       </div>
 
       <div>
