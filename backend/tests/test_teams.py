@@ -1,5 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
 from app.models.team import Team
 from app.models.team_member import TeamMember
+from app.models.tournament import Tournament
+from app.models.tournament_team import TournamentTeam
 from app.models.user import User
 
 TEAM = {
@@ -118,31 +122,87 @@ def test_create_team_validates_name_roster_and_unique_nicknames(logged_in) -> No
     assert logged_in.post("/teams", json=too_many_subs).status_code == 422
 
 
-def test_tournament_teams_returns_fake_teams(client) -> None:
-    response = client.get("/tournaments/8/teams")
+def test_tournament_teams_returns_registered_teams(client, db, user) -> None:
+    tournament, team = create_tournament_and_team(db, user)
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"))
+    db.commit()
+
+    response = client.get(f"/tournaments/{tournament.id}/teams")
+
     assert response.status_code == 200
     body = response.json()
-    assert 2 <= len(body["items"]) <= 3
-    assert body["total"] == len(body["items"])
-    assert all(team["members"] for team in body["items"])
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == team.id
+    assert body["items"][0]["members"]
 
 
-def test_register_team_for_tournament_requires_login(client) -> None:
-    unauthorized = client.post("/tournaments/8/registrations", json={"team_id": 5})
+def test_register_team_for_tournament_requires_login(client, db, user) -> None:
+    tournament, team = create_tournament_and_team(db, user)
+    unauthorized = client.post(
+        f"/tournaments/{tournament.id}/registrations",
+        json={"team_id": team.id},
+    )
     assert unauthorized.status_code == 401
 
 
-def test_register_team_for_tournament_uses_authenticated_user(logged_in) -> None:
-    response = logged_in.post("/tournaments/8/registrations", json={"team_id": 5})
+def test_register_team_for_tournament_uses_authenticated_user(logged_in, db, user) -> None:
+    tournament, team = create_tournament_and_team(db, user)
+
+    response = logged_in.post(
+        f"/tournaments/{tournament.id}/registrations",
+        json={"team_id": team.id},
+    )
+
     assert response.status_code == 201
-    assert response.json() == {"id": 1, "tournament_id": 8, "team_id": 5, "status": "pending"}
+    body = response.json()
+    assert body["tournament_id"] == tournament.id
+    assert body["team_id"] == team.id
+    assert body["status"] == "pending"
 
 
-def test_my_registration_requires_login(client) -> None:
-    assert client.get("/tournaments/8/my-registration").status_code == 401
+def test_my_registration_requires_login(client, db, user) -> None:
+    tournament, _ = create_tournament_and_team(db, user)
+    assert client.get(f"/tournaments/{tournament.id}/my-registration").status_code == 401
 
 
-def test_my_registration_uses_authenticated_user(logged_in) -> None:
-    response = logged_in.get("/tournaments/8/my-registration", headers={"X-User-Id": "999"})
+def test_my_registration_uses_authenticated_user(logged_in, db, user) -> None:
+    tournament, team = create_tournament_and_team(db, user)
+    registration = TournamentTeam(
+        tournament_id=tournament.id,
+        team_id=team.id,
+        status="approved",
+    )
+    db.add(registration)
+    db.commit()
+
+    response = logged_in.get(f"/tournaments/{tournament.id}/my-registration")
+
     assert response.status_code == 200
-    assert response.json() == {"id": 1, "tournament_id": 8, "team_id": 1, "status": "approved"}
+    assert response.json() == {
+        "id": registration.id,
+        "tournament_id": tournament.id,
+        "team_id": team.id,
+        "status": "approved",
+    }
+
+
+def create_tournament_and_team(db, organizer: User, name: str = "Night Wolves"):
+    tournament = Tournament(
+        title="Autumn Cup",
+        starts_at=datetime.now(UTC) + timedelta(days=3),
+        max_teams=4,
+        status="registration",
+        organizer_id=organizer.id,
+    )
+    db.add(tournament)
+    db.flush()
+
+    team = Team(name=name, captain_id=organizer.id)
+    db.add(team)
+    db.flush()
+    db.add_all([
+        TeamMember(team_id=team.id, user_id=organizer.id, nickname=organizer.nickname, role="captain"),
+        TeamMember(team_id=team.id, nickname="Substitute", role="sub"),
+    ])
+    db.commit()
+    return tournament, team
