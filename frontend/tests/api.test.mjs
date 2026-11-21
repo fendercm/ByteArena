@@ -103,3 +103,34 @@ test("UTC dates from the backend are displayed in Moscow time", () => {
   assert.match(formatDate("2099-11-14T16:00:00Z"), /19:00/);
   assert.match(formatDate("2099-11-14T16:00:00Z"), /14/);
 });
+
+test("GET registrations requests the organizer endpoint without cache", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/5/registrations");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+    return Response.json({ items: [], total: 0 });
+  };
+  assert.deepEqual(await api.getRegistrations(5), { items: [], total: 0 });
+});
+
+test("PATCH registration sends the selected decision", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/registrations/12");
+    assert.equal(options.method, "PATCH");
+    assert.equal(options.credentials, "include");
+    assert.deepEqual(JSON.parse(options.body), { status: "approved" });
+    return Response.json({ id: 12, status: "approved" });
+  };
+  assert.equal((await api.decideRegistration(12, "approved")).status, "approved");
+});
+
+test("POST close-registration calls the tournament close endpoint", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/5/close-registration");
+    assert.equal(options.method, "POST");
+    assert.equal(options.credentials, "include");
+    return Response.json({ id: 5, status: "closed" });
+  };
+  assert.equal((await api.closeRegistration(5)).status, "closed");
+});
