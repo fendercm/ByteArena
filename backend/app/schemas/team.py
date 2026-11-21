@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.common import UtcDatetime
+
 TeamMemberRole = Literal["captain", "main", "sub"]
 RegistrationStatus = Literal["pending", "approved", "rejected"]
 
@@ -25,6 +27,36 @@ class TeamMemberOut(BaseModel):
     nickname: str
     user_id: int | None
     role: TeamMemberRole
+
+
+class TeamProfileCaptain(BaseModel):
+    id: int
+    nickname: str
+
+
+class TeamProfileMember(BaseModel):
+    nickname: str
+    user_id: int | None
+    avatar_url: str | None = None
+    role: TeamMemberRole
+
+
+class TeamProfileTournament(BaseModel):
+    id: int
+    title: str
+    starts_at: UtcDatetime
+    status: Literal["draft", "registration", "closed", "running", "finished"]
+    application_status: RegistrationStatus
+
+
+class TeamProfile(BaseModel):
+    """Публичный профиль команды, её состав и история заявок на турниры."""
+
+    id: int
+    name: str
+    captain: TeamProfileCaptain
+    members: list[TeamProfileMember]
+    tournaments: list[TeamProfileTournament]
 
 
 class TeamCreate(BaseModel):
