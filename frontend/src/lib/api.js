@@ -33,6 +33,21 @@ export const api = {
     }),
   createTournament: (data) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
+
+  getRegistrations: (id, signal) =>
+    request(`/tournaments/${encodeURIComponent(id)}/registrations`, {
+      signal,
+      cache: "no-store",
+    }),
+  decideRegistration: (id, status) =>
+    request(`/registrations/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  closeRegistration: (id) =>
+    request(`/tournaments/${encodeURIComponent(id)}/close-registration`, {
+      method: "POST",
+    }),
 };
 
 export function fieldErrors(error) {
