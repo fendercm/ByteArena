@@ -126,3 +126,34 @@ test("GET /api/teams/:id returns the team profile", async () => {
   assert.equal(team.name, "Team Alpha");
   assert.equal(team.captain.nickname, "Shadow");
 });
+
+test("GET /api/tournaments/:id/teams returns tournament teams", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/42/teams");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({ items: [{ id: 12, name: "Team Alpha" }] });
+  };
+
+  const result = await api.getTournamentTeams(42);
+
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0].id, 12);
+  assert.equal(result.items[0].name, "Team Alpha");
+});
+
+test("GET /api/tournaments/:id/my-registration returns the user's registration", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/42/my-registration");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({ team_id: 12, status: "pending" });
+  };
+
+  const result = await api.getMyRegistration(42);
+
+  assert.equal(result.team_id, 12);
+  assert.equal(result.status, "pending");
+});
