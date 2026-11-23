@@ -1,6 +1,7 @@
 import Link from "next/link";
 import DiscordLink from "@/components/DiscordLink";
 import HeaderAccount from "@/components/HeaderAccount";
+import MyTeamLink from "@/components/MyTeamLink";
 
 export default function Header() {
   return (
@@ -14,7 +15,7 @@ export default function Header() {
         </Link>
         <nav className="main-nav" aria-label="Основная навигация">
           <Link href="/">Турниры</Link>
-          <Link href="/api/auth/discord/login">Моя команда</Link>
+          <MyTeamLink />
           <Link href="/tournaments/new">Организатор</Link>
         </nav>
         <div className="header-actions">
