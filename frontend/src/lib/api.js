@@ -33,6 +33,14 @@ export const api = {
     }),
   createTournament: (data) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
+  searchUsers: (query, signal) =>
+    request(`/users/search?${new URLSearchParams({ q: query })}`, { signal }),
+  createTeam: (data) => request("/teams", { method: "POST", body: JSON.stringify(data) }),
+  registerTeam: (tournamentId, teamId) =>
+    request(`/tournaments/${encodeURIComponent(tournamentId)}/registrations`, {
+      method: "POST",
+      body: JSON.stringify({ team_id: teamId }),
+    }),
 };
 
 export function fieldErrors(error) {
