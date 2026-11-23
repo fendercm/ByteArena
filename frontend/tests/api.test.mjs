@@ -8,6 +8,7 @@ const { api, ApiError, fieldErrors, formatDate } = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
 );
 const originalFetch = globalThis.fetch;
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
 });
@@ -104,6 +105,59 @@ test("UTC dates from the backend are displayed in Moscow time", () => {
   assert.match(formatDate("2099-11-14T16:00:00Z"), /14/);
 });
 
+test("GET /api/teams/:id returns the team profile", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/teams/12");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({
+      id: 12,
+      name: "Team Alpha",
+      captain: { id: 1, nickname: "Shadow" },
+      members: [],
+      tournaments: [],
+    });
+  };
+
+  const team = await api.getTeam(12);
+
+  assert.equal(team.id, 12);
+  assert.equal(team.name, "Team Alpha");
+  assert.equal(team.captain.nickname, "Shadow");
+});
+
+test("GET /api/tournaments/:id/teams returns tournament teams", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/42/teams");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({ items: [{ id: 12, name: "Team Alpha" }] });
+  };
+
+  const result = await api.getTournamentTeams(42);
+
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0].id, 12);
+  assert.equal(result.items[0].name, "Team Alpha");
+});
+
+test("GET /api/tournaments/:id/my-registration returns the user's registration", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/42/my-registration");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({ team_id: 12, status: "pending" });
+  };
+
+  const result = await api.getMyRegistration(42);
+
+  assert.equal(result.team_id, 12);
+  assert.equal(result.status, "pending");
+});
+
 test("GET registrations requests the organizer endpoint without cache", async () => {
   globalThis.fetch = async (url, options) => {
     assert.equal(url, "/api/tournaments/5/registrations");
@@ -134,3 +188,4 @@ test("POST close-registration calls the tournament close endpoint", async () => 
   };
   assert.equal((await api.closeRegistration(5)).status, "closed");
 });
+

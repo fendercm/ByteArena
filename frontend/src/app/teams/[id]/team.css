@@ -1,0 +1,116 @@
+.team-page {
+  max-width: 960px;
+  margin-inline: auto;
+}
+.team-heading,
+.team-rosters,
+.team-tournament,
+.team-member-link,
+.team-tournament-statuses {
+  display: flex;
+  align-items: center;
+}
+.team-heading {
+  justify-content: space-between;
+  gap: 24px;
+}
+.team-eyebrow {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.team-captain {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+}
+.team-captain a,
+.team-member-link:hover .team-member-name,
+.team-tournament-title:hover {
+  color: var(--color-accent);
+}
+.team-rosters {
+  align-items: stretch;
+  gap: 24px;
+}
+.team-rosters > section {
+  flex: 1;
+  min-width: 0;
+}
+.team-member-list,
+.team-tournament-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.team-member {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+.team-member-link {
+  min-width: 0;
+  gap: 12px;
+}
+.team-member-avatar {
+  display: grid;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.team-member-placeholder {
+  background: var(--color-inset);
+  color: var(--color-muted);
+  font-weight: 800;
+}
+.team-member-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-role,
+.team-offline {
+  padding: 3px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.team-offline {
+  margin-left: auto;
+}
+.team-tournament {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border);
+}
+.team-tournament-statuses {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.team-tournament-title {
+  font-weight: 800;
+}
+@media (max-width: 700px) {
+  .team-heading,
+  .team-rosters,
+  .team-tournament {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .team-captain {
+    min-width: 0;
+  }
+  .team-tournament-statuses {
+    justify-content: flex-start;
+  }
+}
