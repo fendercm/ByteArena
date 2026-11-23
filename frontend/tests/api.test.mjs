@@ -157,3 +157,35 @@ test("GET /api/tournaments/:id/my-registration returns the user's registration",
   assert.equal(result.team_id, 12);
   assert.equal(result.status, "pending");
 });
+
+test("GET registrations requests the organizer endpoint without cache", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/5/registrations");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+    return Response.json({ items: [], total: 0 });
+  };
+  assert.deepEqual(await api.getRegistrations(5), { items: [], total: 0 });
+});
+
+test("PATCH registration sends the selected decision", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/registrations/12");
+    assert.equal(options.method, "PATCH");
+    assert.equal(options.credentials, "include");
+    assert.deepEqual(JSON.parse(options.body), { status: "approved" });
+    return Response.json({ id: 12, status: "approved" });
+  };
+  assert.equal((await api.decideRegistration(12, "approved")).status, "approved");
+});
+
+test("POST close-registration calls the tournament close endpoint", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/5/close-registration");
+    assert.equal(options.method, "POST");
+    assert.equal(options.credentials, "include");
+    return Response.json({ id: 5, status: "closed" });
+  };
+  assert.equal((await api.closeRegistration(5)).status, "closed");
+});
+

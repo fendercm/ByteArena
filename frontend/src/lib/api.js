@@ -46,7 +46,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ team_id: teamId }),
     }),
+  getRegistrations: (id, signal) =>
+    request(`/tournaments/${encodeURIComponent(id)}/registrations`, {
+      signal,
+      cache: "no-store",
+    }),
+  decideRegistration: (id, status) =>
+    request(`/registrations/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  closeRegistration: (id) =>
+    request(`/tournaments/${encodeURIComponent(id)}/close-registration`, {
+      method: "POST",
+    }),
 };
+
 
 export function fieldErrors(error) {
   if (!Array.isArray(error.detail)) return {};
