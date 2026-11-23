@@ -24,37 +24,8 @@ export const api = {
   logout: () => request("/auth/logout", { method: "POST" }),
   getTournaments: (signal) => request("/tournaments", { signal }),
   getTournament: (id, signal) => request(`/tournaments/${encodeURIComponent(id)}`, { signal }),
-  searchUsers: (query, signal) =>
-    request(`/users/search?q=${encodeURIComponent(query)}`, { signal, cache: "no-store" }),
-  createTeam: (data) => request("/teams", { method: "POST", body: JSON.stringify(data) }),
   getTeam: (id, signal) =>
     request(`/teams/${encodeURIComponent(id)}`, { signal, cache: "no-store" }),
-  registerTeam: (tournamentId, data) =>
-    request(`/tournaments/${encodeURIComponent(tournamentId)}/registrations`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  getTournamentTeams: (id, signal) =>
-    request(`/tournaments/${encodeURIComponent(id)}/teams`, { signal, cache: "no-store" }),
-  getMyRegistration: (id, signal) =>
-    request(`/tournaments/${encodeURIComponent(id)}/my-registration`, {
-      signal,
-      cache: "no-store",
-    }),
-  getRegistrations: (tournamentId, signal) =>
-    request(`/tournaments/${encodeURIComponent(tournamentId)}/registrations`, {
-      signal,
-      cache: "no-store",
-    }),
-  updateRegistration: (registrationId, data) =>
-    request(`/registrations/${encodeURIComponent(registrationId)}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    }),
-  closeRegistration: (tournamentId) =>
-    request(`/tournaments/${encodeURIComponent(tournamentId)}/close-registration`, {
-      method: "POST",
-    }),
   createTournament: (data) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
 };

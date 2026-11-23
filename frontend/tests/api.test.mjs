@@ -8,6 +8,7 @@ const { api, ApiError, fieldErrors, formatDate } = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
 );
 const originalFetch = globalThis.fetch;
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
 });
@@ -104,38 +105,24 @@ test("UTC dates from the backend are displayed in Moscow time", () => {
   assert.match(formatDate("2099-11-14T16:00:00Z"), /14/);
 });
 
-test("team profile API helpers use the agreed endpoints and HTTP methods", async () => {
-  const calls = [];
-  globalThis.fetch = async (url, options = {}) => {
-    calls.push({ url, options });
-    return Response.json({ ok: true });
+test("GET /api/teams/:id returns the team profile", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/teams/12");
+    assert.equal(options.credentials, "include");
+    assert.equal(options.cache, "no-store");
+
+    return Response.json({
+      id: 12,
+      name: "Team Alpha",
+      captain: { id: 1, nickname: "Shadow" },
+      members: [],
+      tournaments: [],
+    });
   };
 
-  await api.searchUsers("ko");
-  await api.createTeam({ name: "Team Alpha", members: [] });
-  await api.getTeam(12);
-  await api.registerTeam(4, { team_id: 12 });
-  await api.getTournamentTeams(4);
-  await api.getMyRegistration(4);
-  await api.getRegistrations(4);
-  await api.updateRegistration(7, { status: "approved" });
-  await api.closeRegistration(4);
+  const team = await api.getTeam(12);
 
-  assert.deepEqual(
-    calls.map(({ url, options }) => [url, options.method ?? "GET"]),
-    [
-      ["/api/users/search?q=ko", "GET"],
-      ["/api/teams", "POST"],
-      ["/api/teams/12", "GET"],
-      ["/api/tournaments/4/registrations", "POST"],
-      ["/api/tournaments/4/teams", "GET"],
-      ["/api/tournaments/4/my-registration", "GET"],
-      ["/api/tournaments/4/registrations", "GET"],
-      ["/api/registrations/7", "PATCH"],
-      ["/api/tournaments/4/close-registration", "POST"],
-    ],
-  );
-  assert.deepEqual(JSON.parse(calls[1].options.body), { name: "Team Alpha", members: [] });
-  assert.deepEqual(JSON.parse(calls[3].options.body), { team_id: 12 });
-  assert.deepEqual(JSON.parse(calls[7].options.body), { status: "approved" });
+  assert.equal(team.id, 12);
+  assert.equal(team.name, "Team Alpha");
+  assert.equal(team.captain.nickname, "Shadow");
 });
