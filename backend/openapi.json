@@ -4,11 +4,6 @@
     "title": "ByteArena API",
     "version": "0.1.0"
   },
-  "servers": [
-    {
-      "url": "/api"
-    }
-  ],
   "paths": {
     "/health": {
       "get": {
@@ -989,7 +984,7 @@
           "tournaments"
         ],
         "summary": "Команды турнира",
-        "description": "Возвращает mock-список команд, участвующих в турнире.",
+        "description": "Подтверждённые команды турнира с составами.",
         "operationId": "list_tournament_teams_tournaments__tournament_id__teams_get",
         "parameters": [
           {
@@ -1032,7 +1027,7 @@
           "tournaments"
         ],
         "summary": "Подать заявку на турнир",
-        "description": "Создаёт mock-заявку команды со статусом pending.",
+        "description": "Создаёт заявку команды со статусом pending.",
         "operationId": "register_team_for_tournament_tournaments__tournament_id__registrations_post",
         "parameters": [
           {
@@ -1116,25 +1111,35 @@
                       "detail": "Регистрация закрыта"
                     }
                   },
-                  "no_places": {
+                  "no_slots": {
                     "summary": "Мест нет",
                     "value": {
                       "detail": "Мест нет"
                     }
                   },
-                  "already_registered": {
+                  "duplicate_registration": {
                     "summary": "Команда уже подала заявку",
                     "value": {
                       "detail": "Команда уже подала заявку"
                     }
                   },
-                  "player_in_another_team": {
+                  "player_already_registered": {
                     "summary": "Игрок уже заявлен в другой команде",
                     "value": {
-                      "detail": "Игрок {ник} уже заявлен в другой команде"
+                      "detail": "Игрок Alpha уже заявлен в другой команде"
                     }
                   }
                 },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Турнир или команда не найдены",
+            "content": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
@@ -1247,7 +1252,7 @@
           "tournaments"
         ],
         "summary": "Моя заявка на турнир",
-        "description": "Возвращает mock-заявку текущего пользователя со статусом approved.",
+        "description": "Вернуть заявку команды, в состав которой входит текущий пользователь.",
         "operationId": "get_my_registration_tournaments__tournament_id__my_registration_get",
         "parameters": [
           {

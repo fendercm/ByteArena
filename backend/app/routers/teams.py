@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
 from app.auth.dependencies import CurrentUser
 from app.db import DbSession
 from app.models.team import Team
 from app.models.team_member import TeamMember
+from app.models.tournament import Tournament
+from app.models.tournament_team import TournamentTeam
 from app.models.user import User
 from app.schemas.common import ErrorOut
 from app.schemas.team import (
@@ -161,9 +164,6 @@ def get_team(team_id: int) -> TeamOut:
 )
 def list_tournament_teams(tournament_id: int, db: DbSession) -> TournamentTeamsOut:
     """Подтверждённые команды турнира с составами."""
-    from app.models.tournament import Tournament
-    from app.models.tournament_team import TournamentTeam
-
     if db.get(Tournament, tournament_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Турнир не найден")
 
@@ -219,9 +219,33 @@ def list_tournament_teams(tournament_id: int, db: DbSession) -> TournamentTeamsO
         },
         409: {
             "model": ErrorOut,
-            "description": "Регистрация закрыта, мест нет, команда уже подала заявку или игрок уже заявлен",
+            "description": (
+                "Регистрация закрыта, мест нет, команда уже подала заявку " "или игрок уже заявлен"
+            ),
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "registration_closed": {
+                            "summary": "Регистрация закрыта",
+                            "value": {"detail": "Регистрация закрыта"},
+                        },
+                        "no_slots": {
+                            "summary": "Мест нет",
+                            "value": {"detail": "Мест нет"},
+                        },
+                        "duplicate_registration": {
+                            "summary": "Команда уже подала заявку",
+                            "value": {"detail": "Команда уже подала заявку"},
+                        },
+                        "player_already_registered": {
+                            "summary": "Игрок уже заявлен в другой команде",
+                            "value": {"detail": "Игрок Alpha уже заявлен в другой команде"},
+                        },
+                    }
+                }
+            },
         },
-        404: {"model": ErrorOut},
+        404: {"model": ErrorOut, "description": "Турнир или команда не найдены"},
     },
 )
 def register_team_for_tournament(
@@ -231,10 +255,6 @@ def register_team_for_tournament(
     db: DbSession,
 ) -> RegistrationOut:
     """Подать заявку команды на турнир после всех проверок регистрации."""
-    from sqlalchemy.orm import aliased
-    from app.models.tournament import Tournament
-    from app.models.tournament_team import TournamentTeam
-
     tournament = db.get(Tournament, tournament_id, with_for_update=True)
     if tournament is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Турнир не найден")
@@ -261,12 +281,15 @@ def register_team_for_tournament(
     if approved_count >= tournament.max_teams:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Мест нет")
 
-    if db.scalar(
-        select(TournamentTeam.id).where(
-            TournamentTeam.tournament_id == tournament_id,
-            TournamentTeam.team_id == reg_in.team_id,
+    if (
+        db.scalar(
+            select(TournamentTeam.id).where(
+                TournamentTeam.tournament_id == tournament_id,
+                TournamentTeam.team_id == reg_in.team_id,
+            )
         )
-    ) is not None:
+        is not None
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Команда уже подала заявку",
