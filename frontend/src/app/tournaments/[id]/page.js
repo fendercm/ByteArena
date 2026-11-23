@@ -97,13 +97,6 @@ export default function TournamentPage({ params }) {
       <div className="panel">
         <TournamentLink id={tournament.id} />
       </div>
-      {tournament.status === "registration" && tournament.teams_count < tournament.max_teams && (
-        <div>
-          <Link className="button" href={`/tournaments/${tournament.id}/register`}>
-            Зарегистрировать команду
-          </Link>
-        </div>
-      )}
     </section>
   );
 }

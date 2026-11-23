@@ -2,31 +2,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.main import app
 from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.tournament import Tournament
 from app.models.tournament_team import TournamentTeam
 from app.models.user import User
-
-
-def pending_implementation(path, method, description):
-    return pytest.mark.xfail(
-        app.openapi()["paths"][path][method].get("description") == description,
-        reason="Маршрут в main пока возвращает тестовый ответ",
-        strict=True,
-        raises=AssertionError,
-    )
-
-
-team_stub = pending_implementation(
-    "/teams", "post", "Создаёт mock-команду; капитаном становится вошедший пользователь."
-)
-registration_stub = pending_implementation(
-    "/tournaments/{tournament_id}/registrations",
-    "post",
-    "Создаёт mock-заявку команды со статусом pending.",
-)
 
 
 @pytest.fixture
@@ -116,19 +96,11 @@ def test_duplicate_nickname_ignores_case(logged_in, roster):
     assert create_team(logged_in, roster).status_code == 422
 
 
-@team_stub
 def test_team_rejects_unknown_player(logged_in, roster):
     roster[0]["user_id"] = 999999
     assert create_team(logged_in, roster).status_code in (404, 422)
 
 
-@pytest.mark.xfail(
-    app.openapi()["paths"]["/users/search"]["get"].get("description")
-    == "Подсказки по нику. Для запроса короче двух символов возвращается пустой список.",
-    reason="Поиск в main пока возвращает фиксированный список игроков",
-    strict=True,
-    raises=AssertionError,
-)
 def test_search_matches_prefix_and_requires_two_characters(client, player):
     short = client.get("/users/search", params={"q": "k"})
     assert short.status_code == 200
@@ -151,7 +123,6 @@ def test_captain_sends_pending_registration(logged_in, registration_setup):
     )
 
 
-@registration_stub
 def test_registration_requires_captain(logged_in, db, player, registration_setup):
     tournament, _ = registration_setup
     other = seed_team(db, player, "Other")
@@ -159,7 +130,6 @@ def test_registration_requires_captain(logged_in, db, player, registration_setup
     assert_denied(register(logged_in, tournament, other), 403, "капитан")
 
 
-@registration_stub
 def test_team_cannot_register_twice(logged_in, db, registration_setup):
     tournament, team = registration_setup
     db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="pending"))
@@ -167,7 +137,6 @@ def test_team_cannot_register_twice(logged_in, db, registration_setup):
     assert_denied(register(logged_in, tournament, team), 409, "уже подала заявку")
 
 
-@registration_stub
 def test_closed_tournament_rejects_registration(logged_in, db, registration_setup):
     tournament, team = registration_setup
     tournament.status = "closed"
@@ -175,7 +144,6 @@ def test_closed_tournament_rejects_registration(logged_in, db, registration_setu
     assert_denied(register(logged_in, tournament, team), 409, "Регистрация закрыта")
 
 
-@registration_stub
 def test_full_tournament_rejects_registration(logged_in, db, user, registration_setup):
     tournament, team = registration_setup
     for i in range(tournament.max_teams):
@@ -185,12 +153,12 @@ def test_full_tournament_rejects_registration(logged_in, db, user, registration_
     assert_denied(register(logged_in, tournament, team), 409, "Мест нет")
 
 
-@registration_stub
-def test_registered_player_cannot_join_another_team(
-    logged_in, db, user, player, registration_setup
-):
+def test_registered_player_cannot_join_another_team(logged_in, db, player, registration_setup):
     tournament, team = registration_setup
-    other = seed_team(db, user, "Other", player)
+    other_captain = User(discord_id="102", nickname="OtherCaptain")
+    db.add(other_captain)
+    db.flush()
+    other = seed_team(db, other_captain, "Other", player)
     db.add(TournamentTeam(tournament_id=tournament.id, team_id=other.id, status="approved"))
     db.commit()
     assert_denied(register(logged_in, tournament, team), 409, player.nickname)
