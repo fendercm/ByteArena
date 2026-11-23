@@ -4,6 +4,11 @@
     "title": "ByteArena API",
     "version": "0.1.0"
   },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
@@ -2767,13 +2772,6 @@
           "type": {
             "type": "string",
             "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
           }
         },
         "type": "object",
