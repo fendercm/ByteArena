@@ -40,4 +40,12 @@ export const homeTournaments = [
     teams_count: 6,
     max_teams: 8,
   },
+  {
+    id: 29,
+    title: "November Showdown",
+    starts_at: "2026-11-28T18:00:00+03:00",
+    status: "closed",
+    teams_count: 4,
+    max_teams: 8,
+  },
 ];

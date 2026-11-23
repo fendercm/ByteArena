@@ -53,13 +53,69 @@ def test_create_team_with_member_roles(logged_in, db) -> None:
     assert len(db.query(TeamMember).filter_by(team_id=team.id).all()) == 6
 
 
-def test_get_team_has_member_profiles(client) -> None:
-    response = client.get("/teams/5")
+def test_get_team_returns_captain_members_and_tournaments(client, db, user) -> None:
+    player = User(
+        discord_id="team-member-1",
+        nickname="Verified Player",
+        avatar_url="https://example.com/avatar.png",
+    )
+    db.add(player)
+    db.flush()
+
+    team = Team(name="Night Wolves", captain_id=user.id)
+    db.add(team)
+    db.flush()
+    db.add_all(
+        [
+            TeamMember(team_id=team.id, user_id=user.id, nickname=user.nickname, role="captain"),
+            TeamMember(team_id=team.id, user_id=player.id, nickname=player.nickname, role="main"),
+            TeamMember(team_id=team.id, user_id=None, nickname="Offline Player", role="sub"),
+        ]
+    )
+    tournament = Tournament(
+        title="Autumn Championship",
+        starts_at=datetime(2026, 12, 1, 18, 0, tzinfo=UTC),
+        max_teams=8,
+        organizer_id=user.id,
+        status="closed",
+    )
+    db.add(tournament)
+    db.flush()
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"))
+    db.commit()
+
+    response = client.get(f"/teams/{team.id}")
+
     assert response.status_code == 200
-    members = response.json()["members"]
-    assert members[0]["user_id"] == response.json()["captain_id"]
-    assert any(member["user_id"] is None for member in members)
-    assert all(member["nickname"] for member in members)
+    profile = response.json()
+    assert profile["id"] == team.id
+    assert profile["name"] == "Night Wolves"
+    assert profile["captain"] == {"id": user.id, "nickname": "Organizer"}
+    assert [member["role"] for member in profile["members"]] == ["captain", "main", "sub"]
+    assert profile["members"][1] == {
+        "nickname": "Verified Player",
+        "user_id": player.id,
+        "avatar_url": "https://example.com/avatar.png",
+        "role": "main",
+    }
+    assert profile["members"][2]["user_id"] is None
+    assert profile["members"][2]["avatar_url"] is None
+    assert profile["tournaments"] == [
+        {
+            "id": tournament.id,
+            "title": "Autumn Championship",
+            "starts_at": "2026-12-01T18:00:00Z",
+            "status": "closed",
+            "application_status": "approved",
+        }
+    ]
+
+
+def test_get_unknown_team_returns_404(client) -> None:
+    response = client.get("/teams/999999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Команда не найдена"}
 
 
 def test_create_team_requires_login(client) -> None:

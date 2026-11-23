@@ -16,6 +16,10 @@ from app.schemas.team import (
     TeamCreate,
     TeamMemberOut,
     TeamOut,
+    TeamProfile,
+    TeamProfileCaptain,
+    TeamProfileMember,
+    TeamProfileTournament,
     TournamentTeamsOut,
 )
 
@@ -141,9 +145,9 @@ def create_team(team_in: TeamCreate, user: CurrentUser, db: DbSession) -> TeamOu
 
 @router.get(
     "/{team_id}",
-    response_model=TeamOut,
-    summary="Получить команду",
-    description="Возвращает mock-профиль команды и её состав.",
+    response_model=TeamProfile,
+    summary="Получить профиль команды",
+    description="Возвращает команду, капитана, состав и турниры с состоянием заявок.",
     responses={
         404: {
             "model": ErrorOut,
@@ -152,9 +156,63 @@ def create_team(team_in: TeamCreate, user: CurrentUser, db: DbSession) -> TeamOu
         }
     },
 )
-def get_team(team_id: int) -> TeamOut:
-    """Профиль команды с участниками, в том числе без аккаунтов."""
-    return _fake_team(team_id, "Night Wolves", captain_id=1)
+def get_team(team_id: int, db: DbSession) -> TeamProfile:
+    """Публичный профиль команды с зарегистрированными и незарегистрированными игроками."""
+    team = db.get(Team, team_id)
+    if team is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Команда не найдена",
+        )
+
+    captain = db.get(User, team.captain_id)
+    if captain is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Команда не найдена",
+        )
+
+    member_rows = db.scalars(select(TeamMember).where(TeamMember.team_id == team.id)).all()
+    role_order = {"captain": 0, "main": 1, "sub": 2}
+    member_rows.sort(key=lambda member: (role_order[member.role], member.id))
+
+    members = []
+    for member in member_rows:
+        player = db.get(User, member.user_id) if member.user_id is not None else None
+        members.append(
+            TeamProfileMember(
+                nickname=member.nickname,
+                user_id=member.user_id,
+                avatar_url=player.avatar_url if player is not None else None,
+                role=member.role,
+            )
+        )
+
+    tournament_rows = db.execute(
+        select(Tournament, TournamentTeam)
+        .join(TournamentTeam, TournamentTeam.tournament_id == Tournament.id)
+        .where(TournamentTeam.team_id == team.id)
+        .order_by(Tournament.starts_at.desc(), Tournament.id.desc())
+    ).all()
+
+    tournaments = [
+        TeamProfileTournament(
+            id=tournament.id,
+            title=tournament.title,
+            starts_at=tournament.starts_at,
+            status=tournament.status,
+            application_status=registration.status,
+        )
+        for tournament, registration in tournament_rows
+    ]
+
+    return TeamProfile(
+        id=team.id,
+        name=team.name,
+        captain=TeamProfileCaptain(id=captain.id, nickname=captain.nickname),
+        members=members,
+        tournaments=tournaments,
+    )
 
 
 @tournaments_router.get(

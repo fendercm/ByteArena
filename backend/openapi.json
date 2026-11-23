@@ -4,6 +4,11 @@
     "title": "ByteArena API",
     "version": "0.1.0"
   },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
@@ -927,8 +932,8 @@
         "tags": [
           "teams"
         ],
-        "summary": "Получить команду",
-        "description": "Возвращает mock-профиль команды и её состав.",
+        "summary": "Получить профиль команды",
+        "description": "Возвращает команду, капитана, состав и турниры с состоянием заявок.",
         "operationId": "get_team_teams__team_id__get",
         "parameters": [
           {
@@ -947,7 +952,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TeamOut"
+                  "$ref": "#/components/schemas/TeamProfile"
                 }
               }
             }
@@ -2143,6 +2148,155 @@
           "members"
         ],
         "title": "TeamOut"
+      },
+      "TeamProfile": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "captain": {
+            "$ref": "#/components/schemas/TeamProfileCaptain"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/TeamProfileMember"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "tournaments": {
+            "items": {
+              "$ref": "#/components/schemas/TeamProfileTournament"
+            },
+            "type": "array",
+            "title": "Tournaments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "captain",
+          "members",
+          "tournaments"
+        ],
+        "title": "TeamProfile",
+        "description": "Публичный профиль команды, её состав и история заявок на турниры."
+      },
+      "TeamProfileCaptain": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nickname"
+        ],
+        "title": "TeamProfileCaptain"
+      },
+      "TeamProfileMember": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "title": "Nickname"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "captain",
+              "main",
+              "sub"
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname",
+          "user_id",
+          "role"
+        ],
+        "title": "TeamProfileMember"
+      },
+      "TeamProfileTournament": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "registration",
+              "closed",
+              "running",
+              "finished"
+            ],
+            "title": "Status"
+          },
+          "application_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
+            "title": "Application Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "starts_at",
+          "status",
+          "application_status"
+        ],
+        "title": "TeamProfileTournament"
       },
       "TeamShort": {
         "properties": {
