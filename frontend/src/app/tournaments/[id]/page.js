@@ -94,9 +94,7 @@ export default function TournamentPage({ params }) {
       <div className="panel">
         <TournamentTeams key={tournament.id} tournament={tournament} />
       </div>
-      <div className="panel">
-        <TournamentTeams key={tournament.id} tournament={tournament} />
-      </div>
+
       <div className="panel">
         <h2>Матчи</h2>
         {tournament.status === "closed" ? (
@@ -114,9 +112,7 @@ export default function TournamentPage({ params }) {
       <div className="panel">
         <TournamentLink id={tournament.id} />
       </div>
-      <div className="panel">
-        <TournamentLink id={tournament.id} />
-      </div>
+
     </section>
   );
 }
