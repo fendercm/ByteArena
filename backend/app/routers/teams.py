@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
 from app.auth.dependencies import CurrentUser
 from app.db import DbSession
 from app.models.team import Team
 from app.models.team_member import TeamMember
+from app.models.tournament import Tournament
+from app.models.tournament_team import TournamentTeam
 from app.models.user import User
 from app.schemas.common import ErrorOut
 from app.schemas.team import (
@@ -157,14 +161,43 @@ def get_team(team_id: int) -> TeamOut:
     "/{tournament_id}/teams",
     response_model=TournamentTeamsOut,
     summary="Команды турнира",
-    description="Возвращает mock-список команд, участвующих в турнире.",
 )
-def list_tournament_teams(tournament_id: int) -> TournamentTeamsOut:
-    """Фиктивные команды турнира."""
+def list_tournament_teams(tournament_id: int, db: DbSession) -> TournamentTeamsOut:
+    """Подтверждённые команды турнира с составами."""
+    if db.get(Tournament, tournament_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Турнир не найден")
+
+    teams = db.scalars(
+        select(Team)
+        .join(TournamentTeam, TournamentTeam.team_id == Team.id)
+        .where(
+            TournamentTeam.tournament_id == tournament_id,
+            TournamentTeam.status == "approved",
+        )
+        .order_by(Team.name, Team.id)
+    ).all()
+
+    team_ids = [team.id for team in teams]
+    members_by_team: dict[int, list[TeamMember]] = {team_id: [] for team_id in team_ids}
+    if team_ids:
+        role_order = {"captain": 0, "main": 1, "sub": 2}
+        for member in db.scalars(select(TeamMember).where(TeamMember.team_id.in_(team_ids))):
+            members_by_team[member.team_id].append(member)
+
     items = [
-        _fake_team(1, "Night Wolves", captain_id=1),
-        _fake_team(2, "Frostbyte", captain_id=5),
-        _fake_team(3, "Red Phoenix", captain_id=8),
+        TeamOut(
+            id=team.id,
+            name=team.name,
+            captain_id=team.captain_id,
+            members=[
+                TeamMemberOut(nickname=member.nickname, user_id=member.user_id, role=member.role)
+                for member in sorted(
+                    members_by_team[team.id],
+                    key=lambda member: (role_order[member.role], member.id),
+                )
+            ],
+        )
+        for team in teams
     ]
     return TournamentTeamsOut(items=items, total=len(items))
 
@@ -174,7 +207,7 @@ def list_tournament_teams(tournament_id: int) -> TournamentTeamsOut:
     response_model=RegistrationOut,
     status_code=status.HTTP_201_CREATED,
     summary="Подать заявку на турнир",
-    description="Создаёт mock-заявку команды со статусом pending.",
+    description="Создаёт заявку команды со статусом pending.",
     responses={
         401: {"model": ErrorOut, "description": "Сначала войдите через Discord"},
         403: {
@@ -187,7 +220,7 @@ def list_tournament_teams(tournament_id: int) -> TournamentTeamsOut:
         409: {
             "model": ErrorOut,
             "description": (
-                "Регистрация закрыта, мест нет, команда уже подала заявку или игрок уже заявлен"
+                "Регистрация закрыта, мест нет, команда уже подала заявку " "или игрок уже заявлен"
             ),
             "content": {
                 "application/json": {
@@ -196,33 +229,106 @@ def list_tournament_teams(tournament_id: int) -> TournamentTeamsOut:
                             "summary": "Регистрация закрыта",
                             "value": {"detail": "Регистрация закрыта"},
                         },
-                        "no_places": {
+                        "no_slots": {
                             "summary": "Мест нет",
                             "value": {"detail": "Мест нет"},
                         },
-                        "already_registered": {
+                        "duplicate_registration": {
                             "summary": "Команда уже подала заявку",
                             "value": {"detail": "Команда уже подала заявку"},
                         },
-                        "player_in_another_team": {
+                        "player_already_registered": {
                             "summary": "Игрок уже заявлен в другой команде",
-                            "value": {"detail": "Игрок {ник} уже заявлен в другой команде"},
+                            "value": {"detail": "Игрок Alpha уже заявлен в другой команде"},
                         },
                     }
                 }
             },
         },
+        404: {"model": ErrorOut, "description": "Турнир или команда не найдены"},
     },
 )
 def register_team_for_tournament(
     tournament_id: int,
     reg_in: RegistrationCreate,
     user: CurrentUser,
+    db: DbSession,
 ) -> RegistrationOut:
-    """Вернуть фиктивную заявку вошедшего пользователя."""
-    _ = user
+    """Подать заявку команды на турнир после всех проверок регистрации."""
+    tournament = db.get(Tournament, tournament_id, with_for_update=True)
+    if tournament is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Турнир не найден")
+    if tournament.status != "registration":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Регистрация закрыта")
+
+    team = db.get(Team, reg_in.team_id)
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+    if team.captain_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Заявку подаёт капитан команды",
+        )
+
+    approved_count = db.scalar(
+        select(func.count())
+        .select_from(TournamentTeam)
+        .where(
+            TournamentTeam.tournament_id == tournament_id,
+            TournamentTeam.status == "approved",
+        )
+    )
+    if approved_count >= tournament.max_teams:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Мест нет")
+
+    if (
+        db.scalar(
+            select(TournamentTeam.id).where(
+                TournamentTeam.tournament_id == tournament_id,
+                TournamentTeam.team_id == reg_in.team_id,
+            )
+        )
+        is not None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Команда уже подала заявку",
+        )
+
+    current_member = aliased(TeamMember)
+    other_member = aliased(TeamMember)
+    conflict_nickname = db.execute(
+        select(current_member.nickname)
+        .join(other_member, other_member.user_id == current_member.user_id)
+        .join(TournamentTeam, TournamentTeam.team_id == other_member.team_id)
+        .where(
+            current_member.team_id == reg_in.team_id,
+            current_member.user_id.is_not(None),
+            other_member.team_id != reg_in.team_id,
+            TournamentTeam.tournament_id == tournament_id,
+            TournamentTeam.status != "rejected",  # Исключаем отклонённые заявки
+        )
+        .limit(1)
+    ).scalar_one_or_none()
+    if conflict_nickname is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Игрок {conflict_nickname} уже заявлен в другой команде",
+        )
+
+    registration = TournamentTeam(
+        tournament_id=tournament_id,
+        team_id=reg_in.team_id,
+        status="pending",
+    )
+    db.add(registration)
+    db.commit()
+    db.refresh(registration)
     return RegistrationOut(
-        id=1, tournament_id=tournament_id, team_id=reg_in.team_id, status="pending"
+        id=registration.id,
+        tournament_id=registration.tournament_id,
+        team_id=registration.team_id,
+        status=registration.status,
     )
 
 
@@ -230,7 +336,6 @@ def register_team_for_tournament(
     "/{tournament_id}/my-registration",
     response_model=RegistrationOut,
     summary="Моя заявка на турнир",
-    description="Возвращает mock-заявку текущего пользователя со статусом approved.",
     responses={
         401: {"model": ErrorOut, "description": "Сначала войдите через Discord"},
         404: {
@@ -243,6 +348,26 @@ def register_team_for_tournament(
 def get_my_registration(
     tournament_id: int,
     user: CurrentUser,
+    db: DbSession,
 ) -> RegistrationOut:
-    """Вернуть фиктивный статус заявки вошедшего пользователя."""
-    return RegistrationOut(id=1, tournament_id=tournament_id, team_id=user.id, status="approved")
+    """Вернуть заявку команды, в состав которой входит текущий пользователь."""
+    from app.models.tournament_team import TournamentTeam
+
+    registration = db.execute(
+        select(TournamentTeam)
+        .join(TeamMember, TeamMember.team_id == TournamentTeam.team_id)
+        .where(
+            TournamentTeam.tournament_id == tournament_id,
+            TeamMember.user_id == user.id,
+        )
+        .order_by(TournamentTeam.id)
+        .limit(1)
+    ).scalar_one_or_none()
+    if registration is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заявка не найдена")
+    return RegistrationOut(
+        id=registration.id,
+        tournament_id=registration.tournament_id,
+        team_id=registration.team_id,
+        status=registration.status,
+    )
