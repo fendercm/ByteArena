@@ -4,16 +4,41 @@ from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.tournament import Tournament
 from app.models.tournament_team import TournamentTeam
+from app.models.user import User
 
 
-def test_user_search_returns_empty_for_short_queries_and_mock_results_for_long_queries(
-    client,
-) -> None:
-    assert client.get("/users/search", params={"q": "a"}).json() == []
-    response = client.get("/users/search", params={"q": "al"})
+def test_user_search_returns_database_prefix_matches(client, db) -> None:
+    for index, nickname in enumerate(["Alpine", "alpha", "Alfred", "Malice"], start=1):
+        db.add(User(discord_id=f"search-{index}", nickname=nickname))
+    db.commit()
+
+    assert client.get("/users/search", params={"q": " a "}).json() == []
+    response = client.get("/users/search", params={"q": "  aL  "})
     assert response.status_code == 200
-    assert 2 <= len(response.json()) <= 3
-    assert all(set(user) == {"id", "nickname", "avatar_url"} for user in response.json())
+    assert [item["nickname"] for item in response.json()] == ["Alfred", "Alpine", "alpha"]
+    assert all(set(item) == {"id", "nickname", "avatar_url"} for item in response.json())
+
+
+def test_user_search_escapes_like_wildcards_and_limits_results(client, db) -> None:
+    nicknames = ["A%player", "Abplayer", *[f"Test{index:02}" for index in range(12)]]
+    for index, nickname in enumerate(nicknames, start=1):
+        db.add(User(discord_id=f"search-limit-{index}", nickname=nickname))
+    db.commit()
+
+    wildcard_response = client.get("/users/search", params={"q": "A%"})
+    assert wildcard_response.status_code == 200
+    assert [item["nickname"] for item in wildcard_response.json()] == ["A%player"]
+
+    limited_response = client.get("/users/search", params={"q": "test"})
+    assert limited_response.status_code == 200
+    assert len(limited_response.json()) == 10
+
+
+def test_user_search_returns_empty_list_when_database_has_no_match(client) -> None:
+    response = client.get("/users/search", params={"q": "fe"})
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_me_requires_login(client) -> None:

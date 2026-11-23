@@ -24,6 +24,13 @@ export const api = {
   logout: () => request("/auth/logout", { method: "POST" }),
   getTournaments: (signal) => request("/tournaments", { signal }),
   getTournament: (id, signal) => request(`/tournaments/${encodeURIComponent(id)}`, { signal }),
+  getTournamentTeams: (id, signal) =>
+    request(`/tournaments/${encodeURIComponent(id)}/teams`, { signal, cache: "no-store" }),
+  getMyRegistration: (id, signal) =>
+    request(`/tournaments/${encodeURIComponent(id)}/my-registration`, {
+      signal,
+      cache: "no-store",
+    }),
   createTournament: (data) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
   searchUsers: (query, signal) =>
