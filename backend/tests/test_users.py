@@ -47,6 +47,25 @@ def test_me_requires_login(client) -> None:
     assert response.json() == {"detail": "Сначала войдите через Discord"}
 
 
+def test_me_returns_team_of_logged_in_user(client, db, user, logged_in) -> None:
+    assert client.get("/me").json()["team"] is None
+
+    team = Team(name="Night Wolves", captain_id=user.id)
+    db.add(team)
+    db.flush()
+    db.add(TeamMember(team_id=team.id, user_id=user.id, nickname=user.nickname, role="captain"))
+    db.commit()
+
+    response = client.get("/me")
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": user.id,
+        "nickname": "Organizer",
+        "avatar_url": None,
+        "team": {"id": team.id, "name": "Night Wolves"},
+    }
+
+
 def test_get_user_profile_returns_database_data(client, db, user) -> None:
     team = Team(name="Night Wolves", captain_id=user.id)
     db.add(team)

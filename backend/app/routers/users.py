@@ -43,10 +43,27 @@ def search_users(
     ]
 
 
+def _user_team(db: DbSession, user_id: int) -> TeamShort | None:
+    """Команда игрока; если команд несколько, берём самую раннюю."""
+    team = db.scalar(
+        select(Team)
+        .join(TeamMember, TeamMember.team_id == Team.id)
+        .where(TeamMember.user_id == user_id)
+        .order_by(Team.id)
+        .limit(1)
+    )
+    return TeamShort(id=team.id, name=team.name) if team else None
+
+
 @router.get("/me", response_model=UserMeOut, responses={401: {"model": ErrorOut}})
-def read_me(user: CurrentUser) -> User:
-    """Кто сейчас вошёл. Без входа — 401."""
-    return user
+def read_me(user: CurrentUser, db: DbSession) -> UserMeOut:
+    """Кто сейчас вошёл и его команда. Без входа — 401."""
+    return UserMeOut(
+        id=user.id,
+        nickname=user.nickname,
+        avatar_url=user.avatar_url,
+        team=_user_team(db, user.id),
+    )
 
 
 @router.get(
@@ -62,14 +79,6 @@ def get_user_profile(user_id: int, db: DbSession) -> UserProfileOut:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Игрок не найден",
         )
-
-    team = db.scalar(
-        select(Team)
-        .join(TeamMember, TeamMember.team_id == Team.id)
-        .where(TeamMember.user_id == user_id)
-        .order_by(Team.id)
-        .limit(1)
-    )
 
     tournaments = db.scalars(
         select(Tournament)
@@ -87,7 +96,7 @@ def get_user_profile(user_id: int, db: DbSession) -> UserProfileOut:
         id=user.id,
         nickname=user.nickname,
         avatar_url=user.avatar_url,
-        team=TeamShort(id=team.id, name=team.name) if team else None,
+        team=_user_team(db, user_id),
         tournaments=[
             TournamentProfileOut(id=tournament.id, title=tournament.title)
             for tournament in tournaments

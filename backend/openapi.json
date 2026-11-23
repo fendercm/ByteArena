@@ -716,7 +716,7 @@
           "users"
         ],
         "summary": "Read Me",
-        "description": "Кто сейчас вошёл. Без входа — 401.",
+        "description": "Кто сейчас вошёл и его команда. Без входа — 401.",
         "operationId": "read_me_me_get",
         "parameters": [
           {
@@ -2675,6 +2675,16 @@
               }
             ],
             "title": "Avatar Url"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

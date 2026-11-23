@@ -29,6 +29,7 @@ export const userHandlers = [
       id: profile.id,
       nickname: profile.nickname,
       avatar_url: profile.avatar_url,
+      team: profile.team,
     });
   }),
 

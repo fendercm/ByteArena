@@ -78,6 +78,7 @@ def test_second_login_updates_profile_without_duplicate(
         "id": 1,
         "nickname": "New Nick",
         "avatar_url": None,
+        "team": None,
     }
 
 
