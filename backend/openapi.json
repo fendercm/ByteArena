@@ -391,7 +391,7 @@
           "matches"
         ],
         "summary": "Set Match Result",
-        "description": "Внести или исправить счёт. Победитель уходит в следующий матч.",
+        "description": "Внести или исправить счёт. Победитель — у кого счёт больше; он сразу встаёт\nв следующий матч (при исправлении заменяет прежнего). После финала турнир завершён.",
         "operationId": "set_match_result_matches__match_id__result_post",
         "parameters": [
           {
@@ -401,6 +401,22 @@
             "schema": {
               "type": "integer",
               "title": "Match Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
             }
           }
         ],
@@ -436,14 +452,14 @@
             "description": "Unauthorized"
           },
           "403": {
+            "description": "Это может только организатор турнира",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
             "content": {
@@ -456,14 +472,28 @@
             "description": "Not Found"
           },
           "409": {
+            "description": "В матче ещё нет обеих команд или следующий матч уже сыгран",
             "content": {
               "application/json": {
+                "examples": {
+                  "teams_missing": {
+                    "summary": "Соперник ещё не определён или это проход без игры",
+                    "value": {
+                      "detail": "В матче ещё нет обеих команд"
+                    }
+                  },
+                  "next_played": {
+                    "summary": "Исправлять поздно: следующий матч уже сыгран",
+                    "value": {
+                      "detail": "Следующий матч уже сыгран"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
             "description": "Validation Error",
