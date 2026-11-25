@@ -225,7 +225,7 @@
           "tournaments"
         ],
         "summary": "Start Tournament",
-        "description": "Запустить турнир и построить сетку. 409: уже запущен или мало команд.",
+        "description": "Запустить турнир: closed → running, сетка строится из подтверждённых команд.\nПроходы без игры сохраняются сыгранными, их победители уже стоят во втором раунде.",
         "operationId": "start_tournament_tournaments__tournament_id__start_post",
         "parameters": [
           {
@@ -235,6 +235,22 @@
             "schema": {
               "type": "integer",
               "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
             }
           }
         ],
@@ -260,14 +276,14 @@
             "description": "Unauthorized"
           },
           "403": {
+            "description": "Это может только организатор турнира",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Forbidden"
+            }
           },
           "404": {
             "content": {
@@ -280,14 +296,28 @@
             "description": "Not Found"
           },
           "409": {
+            "description": "Регистрация ещё не закрыта или турнир уже запущен",
             "content": {
               "application/json": {
+                "examples": {
+                  "not_closed": {
+                    "summary": "Регистрация ещё открыта",
+                    "value": {
+                      "detail": "Регистрация ещё не закрыта"
+                    }
+                  },
+                  "already_started": {
+                    "summary": "Турнир уже запущен или завершён",
+                    "value": {
+                      "detail": "Турнир уже запущен"
+                    }
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ErrorOut"
                 }
               }
-            },
-            "description": "Conflict"
+            }
           },
           "422": {
             "description": "Validation Error",
