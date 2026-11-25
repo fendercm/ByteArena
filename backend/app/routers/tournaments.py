@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -10,6 +9,7 @@ from app.models.match import Match
 from app.models.team import Team
 from app.models.tournament import Tournament
 from app.models.tournament_team import TournamentTeam
+from app.routers.organizer import ORGANIZER_ERRORS, tournament_for_organizer
 from app.schemas.common import ErrorOut
 from app.schemas.match import MatchOut
 from app.schemas.tournament import (
@@ -20,84 +20,9 @@ from app.schemas.tournament import (
     TournamentStatus,
     TournamentTeamOut,
 )
+from app.services.bracket import BracketError, save_bracket
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
-
-# Пример для заглушки POST /{id}/start: настоящий запуск и сетка появятся позже
-EXAMPLE = TournamentOut(
-    id=1,
-    title="Autumn Championship 2026",
-    description="Сезонный турнир по Counter-Strike",
-    game="cs2",
-    starts_at=datetime.fromisoformat("2026-11-05T18:00:00+03:00"),
-    max_teams=4,
-    teams_count=4,
-    rules="Single elimination, best of three",
-    status="registration",
-    organizer_id=1,
-    created_at=datetime.fromisoformat("2026-10-25T12:00:00+03:00"),
-)
-
-EXAMPLE_TEAMS = [
-    TournamentTeamOut(id=1, name="Night Wolves", status="approved"),
-    TournamentTeamOut(id=2, name="Frostbyte", status="approved"),
-    TournamentTeamOut(id=3, name="Red Phoenix", status="approved"),
-    TournamentTeamOut(id=4, name="Shadow Protocol", status="approved"),
-]
-
-
-def example_detail(tournament_id: int) -> TournamentDetail:
-    """Идущий турнир на 4 команды: первый полуфинал сыгран, его победитель уже в финале."""
-    return TournamentDetail(
-        **EXAMPLE.model_dump(exclude={"id", "status"}),
-        id=tournament_id,
-        status="running",
-        teams=EXAMPLE_TEAMS,
-        matches=[
-            MatchOut(
-                id=1,
-                tournament_id=tournament_id,
-                round=1,
-                position=1,
-                team1_id=1,
-                team2_id=2,
-                score1=13,
-                score2=8,
-                winner_id=1,
-                status="finished",
-                scheduled_at=datetime.fromisoformat("2026-11-05T18:00:00+03:00"),
-                next_match_id=3,
-            ),
-            MatchOut(
-                id=2,
-                tournament_id=tournament_id,
-                round=1,
-                position=2,
-                team1_id=3,
-                team2_id=4,
-                score1=None,
-                score2=None,
-                winner_id=None,
-                status="scheduled",
-                scheduled_at=datetime.fromisoformat("2026-11-05T19:00:00+03:00"),
-                next_match_id=3,
-            ),
-            MatchOut(
-                id=3,
-                tournament_id=tournament_id,
-                round=2,
-                position=1,
-                team1_id=1,
-                team2_id=None,
-                score1=None,
-                score2=None,
-                winner_id=None,
-                status="scheduled",
-                scheduled_at=None,
-                next_match_id=None,
-            ),
-        ],
-    )
 
 
 def _teams_count(tournament_id: ColumnElement[int]) -> ScalarSelect[int]:
@@ -195,13 +120,42 @@ def get_tournament(tournament_id: int, db: DbSession) -> TournamentDetail:
     "/{tournament_id}/start",
     response_model=TournamentDetail,
     responses={
-        401: {"model": ErrorOut},
-        403: {"model": ErrorOut},
-        404: {"model": ErrorOut},
-        409: {"model": ErrorOut},
+        **ORGANIZER_ERRORS,
+        409: {
+            "model": ErrorOut,
+            "description": "Регистрация ещё не закрыта или турнир уже запущен",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "not_closed": {
+                            "summary": "Регистрация ещё открыта",
+                            "value": {"detail": "Регистрация ещё не закрыта"},
+                        },
+                        "already_started": {
+                            "summary": "Турнир уже запущен или завершён",
+                            "value": {"detail": "Турнир уже запущен"},
+                        },
+                    }
+                }
+            },
+        },
     },
 )
-def start_tournament(tournament_id: int) -> TournamentDetail:
-    """Запустить турнир и построить сетку. 409: уже запущен или мало команд."""
-    # ЗАГЛУШКА: логика появится на неделе 3
-    return example_detail(tournament_id)
+def start_tournament(tournament_id: int, user: CurrentUser, db: DbSession) -> TournamentDetail:
+    """Запустить турнир: closed → running, сетка строится из подтверждённых команд.
+    Проходы без игры сохраняются сыгранными, их победители уже стоят во втором раунде."""
+    tournament = tournament_for_organizer(db, tournament_id, user, lock=True)
+    if tournament.status in ("running", "finished"):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Турнир уже запущен")
+    if tournament.status != "closed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Регистрация ещё не закрыта"
+        )
+
+    try:
+        save_bracket(db, tournament)
+    except BracketError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    tournament.status = "running"
+    db.commit()  # сетка и смена статуса — одна транзакция: либо обе, либо ничего
+    return get_tournament(tournament_id, db)

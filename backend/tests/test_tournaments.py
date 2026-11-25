@@ -177,12 +177,3 @@ def test_get_tournament_has_teams_and_bracket(client: TestClient, db: Session, u
     assert len(body["matches"]) == 1
     assert body["matches"][0]["team1_id"] == alpha.id
     assert body["matches"][0]["status"] == "scheduled"
-
-
-# --- запуск пока заглушка ---
-
-
-def test_start_tournament_is_still_a_stub(client: TestClient) -> None:
-    response = client.post("/tournaments/7/start")
-    assert response.status_code == 200
-    assert response.json()["status"] == "running"
