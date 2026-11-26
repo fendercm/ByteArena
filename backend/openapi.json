@@ -1739,7 +1739,7 @@
           "team1": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TeamShort"
+                "$ref": "#/components/schemas/TeamOut"
               },
               {
                 "type": "null"
@@ -1749,7 +1749,7 @@
           "team2": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TeamShort"
+                "$ref": "#/components/schemas/TeamOut"
               },
               {
                 "type": "null"
@@ -1775,7 +1775,7 @@
           "team2"
         ],
         "title": "MatchDetail",
-        "description": "Страница матча: к данным сетки добавлены названия команд."
+        "description": "Страница матча: к данным сетки добавлены названия команд и составы."
       },
       "MatchOut": {
         "properties": {

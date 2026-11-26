@@ -3,7 +3,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.common import UtcDatetime
-from app.schemas.team import TeamShort
+from app.schemas.team import TeamOut
 
 MatchStatus = Literal["scheduled", "live", "finished"]
 
@@ -28,10 +28,10 @@ class MatchOut(BaseModel):
 
 
 class MatchDetail(MatchOut):
-    """Страница матча: к данным сетки добавлены названия команд."""
+    """Страница матча: к данным сетки добавлены названия команд и составы."""
 
-    team1: TeamShort | None
-    team2: TeamShort | None
+    team1: TeamOut | None
+    team2: TeamOut | None
 
 
 class MatchResultIn(BaseModel):

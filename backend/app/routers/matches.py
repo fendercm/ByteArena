@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select
 
 from app.auth.dependencies import CurrentUser
 from app.db import DbSession
 from app.models.match import Match
 from app.models.team import Team
+from app.models.team_member import TeamMember
 from app.routers.organizer import ORGANIZER_ERRORS, tournament_for_organizer
 from app.schemas.common import ErrorOut
 from app.schemas.match import MatchDetail, MatchOut, MatchResultIn
-from app.schemas.team import TeamShort
+from app.schemas.team import TeamMemberOut, TeamOut
 from app.services.bracket import next_slot
 
 router = APIRouter(prefix="/matches", tags=["matches"])
@@ -27,16 +29,29 @@ def get_match(match_id: int, db: DbSession) -> MatchDetail:
     team1 = db.get(Team, match.team1_id) if match.team1_id is not None else None
     team2 = db.get(Team, match.team2_id) if match.team2_id is not None else None
 
-    return MatchDetail.model_validate(
-        {
-            **{
-                name: getattr(match, name)
-                for name in MatchDetail.model_fields
-                if name not in ("team1", "team2")
-            },
-            "team1": TeamShort(id=team1.id, name=team1.name) if team1 is not None else None,
-            "team2": TeamShort(id=team2.id, name=team2.name) if team2 is not None else None,
-        }
+    role_order = {"captain": 0, "main": 1, "sub": 2}
+
+    def team_out(team: Team | None) -> TeamOut | None:
+        if team is None:
+            return None
+        members = db.scalars(select(TeamMember).where(TeamMember.team_id == team.id)).all()
+        return TeamOut(
+            id=team.id,
+            name=team.name,
+            captain_id=team.captain_id,
+            members=[
+                TeamMemberOut(nickname=member.nickname, user_id=member.user_id, role=member.role)
+                for member in sorted(
+                    members,
+                    key=lambda member: (role_order[member.role], member.id),
+                )
+            ],
+        )
+
+    return MatchDetail(
+        **MatchOut.model_validate(match).model_dump(),
+        team1=team_out(team1),
+        team2=team_out(team2),
     )
 
 
