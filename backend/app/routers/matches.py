@@ -1,10 +1,9 @@
-from datetime import datetime
-
 from fastapi import APIRouter, HTTPException, status
 
 from app.auth.dependencies import CurrentUser
 from app.db import DbSession
 from app.models.match import Match
+from app.models.team import Team
 from app.routers.organizer import ORGANIZER_ERRORS, tournament_for_organizer
 from app.schemas.common import ErrorOut
 from app.schemas.match import MatchDetail, MatchOut, MatchResultIn
@@ -13,35 +12,31 @@ from app.services.bracket import next_slot
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
-EXAMPLE = MatchOut(
-    id=1,
-    tournament_id=1,
-    round=1,
-    position=1,
-    team1_id=1,
-    team2_id=2,
-    score1=None,
-    score2=None,
-    winner_id=None,
-    status="scheduled",
-    scheduled_at=datetime.fromisoformat("2026-11-05T18:00:00+03:00"),
-    next_match_id=3,
-)
-
 
 @router.get(
     "/{match_id}",
     response_model=MatchDetail,
     responses={404: {"model": ErrorOut}},
 )
-def get_match(match_id: int) -> MatchDetail:
+def get_match(match_id: int, db: DbSession) -> MatchDetail:
     """Страница матча."""
-    # ЗАГЛУШКА: логика появится на неделе 3
-    return MatchDetail(
-        **EXAMPLE.model_dump(exclude={"id"}),
-        id=match_id,
-        team1=TeamShort(id=1, name="Night Wolves"),
-        team2=TeamShort(id=2, name="Frostbyte"),
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Матч не найден")
+
+    team1 = db.get(Team, match.team1_id) if match.team1_id is not None else None
+    team2 = db.get(Team, match.team2_id) if match.team2_id is not None else None
+
+    return MatchDetail.model_validate(
+        {
+            **{
+                name: getattr(match, name)
+                for name in MatchDetail.model_fields
+                if name not in ("team1", "team2")
+            },
+            "team1": TeamShort(id=team1.id, name=team1.name) if team1 is not None else None,
+            "team2": TeamShort(id=team2.id, name=team2.name) if team2 is not None else None,
+        }
     )
 
 
