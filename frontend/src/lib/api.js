@@ -25,6 +25,9 @@ export const api = {
   getTournaments: (signal) => request("/tournaments", { signal }),
   getTournament: (id, signal) => request(`/tournaments/${encodeURIComponent(id)}`, { signal }),
 
+  getMatch: (id, signal) =>
+    request(`/matches/${encodeURIComponent(id)}`, { signal, cache: "no-store" }),
+
   getTournamentTeams: (id, signal) =>
     request(`/tournaments/${encodeURIComponent(id)}/teams`, { signal, cache: "no-store" }),
 
@@ -61,7 +64,6 @@ export const api = {
       method: "POST",
     }),
 };
-
 
 export function fieldErrors(error) {
   if (!Array.isArray(error.detail)) return {};
