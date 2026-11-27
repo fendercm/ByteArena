@@ -361,3 +361,36 @@
     flex-direction: column;
   }
 }
+
+.tournament-page .manage-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tournament-page .manage-match-round {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tournament-page .manage-match-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-inset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.tournament-page .manage-score-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tournament-page .manage-score-controls input {
+  width: 84px;
+}
