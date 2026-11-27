@@ -7,6 +7,7 @@ import TournamentLink from "@/components/TournamentLink";
 import TournamentRegistration from "@/components/TournamentRegistration";
 import TournamentTeams from "@/components/TournamentTeams";
 import { api, formatDate } from "@/lib/api";
+import { getChampion } from "@/lib/bracket";
 import "../tournaments.css";
 
 const statuses = {
@@ -27,17 +28,43 @@ export default function TournamentPage({ params }) {
     const controller = new AbortController();
     setError("");
     setTournament(null);
-    api
-      .getTournament(params.id, controller.signal)
-      .then(setTournament)
-      .catch((err) => {
-        if (err.name !== "AbortError")
-          setError(err.status === 404 ? "Турнир не найден" : "Не удалось загрузить турнир");
-      });
-    return () => controller.abort();
+    let inFlight = false;
+    let currentStatus;
+    async function loadTournament() {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const data = await api.getTournament(params.id, controller.signal);
+        if (controller.signal.aborted) return;
+        currentStatus = data.status;
+        setTournament(data);
+        setError("");
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError(err.status === 404 ? "Турнир не найден" : "Не удалось обновить турнир");
+        }
+      } finally {
+        inFlight = false;
+      }
+    }
+    function refreshVisibleTournament() {
+      if (document.visibilityState === "visible") loadTournament();
+    }
+    loadTournament();
+    const timer = setInterval(() => {
+      if (currentStatus === "running") refreshVisibleTournament();
+    }, 15000);
+    window.addEventListener("focus", refreshVisibleTournament);
+    document.addEventListener("visibilitychange", refreshVisibleTournament);
+    return () => {
+      controller.abort();
+      clearInterval(timer);
+      window.removeEventListener("focus", refreshVisibleTournament);
+      document.removeEventListener("visibilitychange", refreshVisibleTournament);
+    };
   }, [params.id, attempt]);
 
-  if (error)
+  if (error && !tournament)
     return (
       <section className="tournament-page page-stack">
         <h1>{error}</h1>
@@ -48,6 +75,7 @@ export default function TournamentPage({ params }) {
       </section>
     );
   if (!tournament) return <p role="status">Загружаем турнир…</p>;
+  const champion = getChampion(tournament);
 
   return (
     <section className="tournament-page page-stack">
@@ -63,6 +91,20 @@ export default function TournamentPage({ params }) {
         <h1>{tournament.title}</h1>
         <span className={`badge badge-${tournament.status}`}>{statuses[tournament.status]}</span>
       </div>
+      {error && (
+        <div className="error-message" role="alert">
+          <p>{error}. Показаны последние загруженные данные.</p>
+          <button className="button button-secondary" onClick={() => setAttempt((n) => n + 1)}>
+            Повторить
+          </button>
+        </div>
+      )}
+      {champion && (
+        <section className="panel tournament-champion" aria-labelledby="champion-heading">
+          <h2 id="champion-heading">Чемпион</h2>
+          <Link href={`/teams/${champion.id}`}>{champion.name}</Link>
+        </section>
+      )}
       <div className="panel tournament-meta">
         <div>
           <span className="muted">Начало · МСК</span>
@@ -97,7 +139,7 @@ export default function TournamentPage({ params }) {
       </div>
 
       <div className="panel">
-        <h2>Матчи</h2>
+        <h2>Турнирная сетка</h2>
         <TournamentMatches tournament={tournament} />
       </div>
       <div className="panel">
