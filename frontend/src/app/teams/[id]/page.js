@@ -14,6 +14,20 @@ const tournamentStatuses = {
   finished: "Завершён",
 };
 
+const resultLabel = (tournament) => {
+  if (tournament.result === "champion") return "Чемпион";
+
+  if (tournament.result === "eliminated") {
+    return tournament.eliminated_round
+      ? `Выбыли в раунде ${tournament.eliminated_round}`
+      : "Выбыли";
+  }
+
+  if (tournament.result === "running") return "Идёт";
+
+  return null;
+};
+
 const applicationStatuses = {
   pending: "На рассмотрении",
   approved: "Подтверждена",
@@ -37,6 +51,7 @@ function Member({ member }) {
           {member.nickname.trim().charAt(0).toUpperCase() || "?"}
         </span>
       )}
+
       <span className="team-member-name">{member.nickname}</span>
       {member.role === "captain" && <span className="team-role">Капитан</span>}
       {member.user_id === null && <span className="team-offline">не на сайте</span>}
@@ -64,6 +79,7 @@ export default function TeamPage({ params }) {
 
   useEffect(() => {
     const controller = new AbortController();
+
     setLoading(true);
     setError("");
     setTeam(null);
@@ -72,7 +88,12 @@ export default function TeamPage({ params }) {
       .getTeam(params.id, controller.signal)
       .then(setTeam, (err) => {
         if (controller.signal.aborted) return;
-        setError(err.status === 404 ? "Команда не найдена" : "Не удалось загрузить команду");
+
+        setError(
+          err.status === 404
+            ? "Команда не найдена"
+            : "Не удалось загрузить команду",
+        );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -95,9 +116,14 @@ export default function TeamPage({ params }) {
         <Link className="back-link" href="/">
           ← Все турниры
         </Link>
+
         <h1>{error}</h1>
+
         {error !== "Команда не найдена" && (
-          <button className="button" onClick={() => setAttempt((value) => value + 1)}>
+          <button
+            className="button"
+            onClick={() => setAttempt((value) => value + 1)}
+          >
             Повторить
           </button>
         )}
@@ -106,23 +132,30 @@ export default function TeamPage({ params }) {
   }
 
   const mainMembers = team.members.filter(
-  (member) => member.role === "main" || member.role === "captain",
-);
-  const substitutes = team.members.filter((member) => member.role === "sub");
+    (member) => member.role === "main" || member.role === "captain",
+  );
+
+  const substitutes = team.members.filter(
+    (member) => member.role === "sub",
+  );
 
   return (
     <section className="team-page page-stack">
       <Link className="back-link" href="/">
         ← Все турниры
       </Link>
+
       <header className="team-heading">
         <div>
           <p className="team-eyebrow">Профиль команды</p>
           <h1>{team.name}</h1>
         </div>
+
         <div className="team-captain panel">
           <span className="muted">Капитан</span>
-          <Link href={`/users/${team.captain.id}`}>{team.captain.nickname}</Link>
+          <Link href={`/users/${team.captain.id}`}>
+            {team.captain.nickname}
+          </Link>
         </div>
       </header>
 
@@ -132,10 +165,14 @@ export default function TeamPage({ params }) {
             <h2 id="main-roster-title">Основной состав</h2>
             <span className="muted">{mainMembers.length} игроков</span>
           </div>
+
           {mainMembers.length ? (
             <ul className="team-member-list">
               {mainMembers.map((member, index) => (
-                <Member key={`${member.user_id ?? member.nickname}-${index}`} member={member} />
+                <Member
+                  key={`${member.user_id ?? member.nickname}-${index}`}
+                  member={member}
+                />
               ))}
             </ul>
           ) : (
@@ -148,10 +185,14 @@ export default function TeamPage({ params }) {
             <h2 id="sub-roster-title">Запасные</h2>
             <span className="muted">{substitutes.length} игроков</span>
           </div>
+
           {substitutes.length ? (
             <ul className="team-member-list">
               {substitutes.map((member, index) => (
-                <Member key={`${member.user_id ?? member.nickname}-${index}`} member={member} />
+                <Member
+                  key={`${member.user_id ?? member.nickname}-${index}`}
+                  member={member}
+                />
               ))}
             </ul>
           ) : (
@@ -165,31 +206,51 @@ export default function TeamPage({ params }) {
           <h2 id="team-tournaments-title">Турниры команды</h2>
           <span className="muted">{team.tournaments.length}</span>
         </div>
+
         {team.tournaments.length ? (
           <ul className="team-tournament-list">
             {team.tournaments.map((tournament) => (
               <li key={tournament.id} className="team-tournament">
                 <div>
-                  <Link href={`/tournaments/${tournament.id}`} className="team-tournament-title">
+                  <Link
+                    href={`/tournaments/${tournament.id}`}
+                    className="team-tournament-title"
+                  >
                     {tournament.title}
                   </Link>
-                  <p className="muted">{formatDate(tournament.starts_at)}</p>
+
+                  <p className="muted">
+                    {formatDate(tournament.starts_at)}
+                  </p>
                 </div>
+
                 <div className="team-tournament-statuses">
                   <span className={`badge badge-${tournament.status}`}>
-                    {tournamentStatuses[tournament.status] ?? tournament.status}
+                    {tournamentStatuses[tournament.status] ??
+                      tournament.status}
                   </span>
-                  <span className={`badge badge-${tournament.application_status}`}>
+
+                  <span
+                    className={`badge badge-${tournament.application_status}`}
+                  >
                     Заявка:{" "}
                     {applicationStatuses[tournament.application_status] ??
                       tournament.application_status}
                   </span>
+
+                  {resultLabel(tournament) && (
+                    <span className="badge">
+                      {resultLabel(tournament)}
+                    </span>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted">Команда ещё не участвовала в турнирах.</p>
+          <p className="muted">
+            Команда ещё не участвовала в турнирах.
+          </p>
         )}
       </section>
     </section>
