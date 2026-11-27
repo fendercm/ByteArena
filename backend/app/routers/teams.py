@@ -22,6 +22,7 @@ from app.schemas.team import (
     TeamProfileTournament,
     TournamentTeamsOut,
 )
+from app.services.tournament_result import get_tournament_result
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -195,16 +196,20 @@ def get_team(team_id: int, db: DbSession) -> TeamProfile:
         .order_by(Tournament.starts_at.desc(), Tournament.id.desc())
     ).all()
 
-    tournaments = [
-        TeamProfileTournament(
-            id=tournament.id,
-            title=tournament.title,
-            starts_at=tournament.starts_at,
-            status=tournament.status,
-            application_status=registration.status,
+    tournaments = []
+    for tournament, registration in tournament_rows:
+        outcome = get_tournament_result(db, tournament, team.id)
+        tournaments.append(
+            TeamProfileTournament(
+                id=tournament.id,
+                title=tournament.title,
+                starts_at=tournament.starts_at,
+                status=tournament.status,
+                application_status=registration.status,
+                result=outcome.result,
+                eliminated_round=outcome.eliminated_round,
+            )
         )
-        for tournament, registration in tournament_rows
-    ]
 
     return TeamProfile(
         id=team.id,

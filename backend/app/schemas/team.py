@@ -47,6 +47,8 @@ class TeamProfileTournament(BaseModel):
     starts_at: UtcDatetime
     status: Literal["draft", "registration", "closed", "running", "finished"]
     application_status: RegistrationStatus
+    result: Literal["champion", "eliminated", "running"] | None = None
+    eliminated_round: int | None = None
 
 
 class TeamProfile(BaseModel):

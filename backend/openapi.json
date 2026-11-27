@@ -2346,6 +2346,33 @@
               "rejected"
             ],
             "title": "Application Status"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "champion",
+                  "eliminated",
+                  "running"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "eliminated_round": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eliminated Round"
           }
         },
         "type": "object",
@@ -2656,6 +2683,33 @@
           "title": {
             "type": "string",
             "title": "Title"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "champion",
+                  "eliminated",
+                  "running"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "eliminated_round": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eliminated Round"
           }
         },
         "type": "object",
