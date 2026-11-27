@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import TournamentMatches from "@/components/TournamentMatches";
 import TournamentLink from "@/components/TournamentLink";
 import TournamentRegistration from "@/components/TournamentRegistration";
 import TournamentTeams from "@/components/TournamentTeams";
@@ -97,22 +98,11 @@ export default function TournamentPage({ params }) {
 
       <div className="panel">
         <h2>Матчи</h2>
-        {tournament.status === "closed" ? (
-          <p className="muted">Сетка появится после запуска турнира</p>
-        ) : tournament.status === "registration" || tournament.status === "draft" ? (
-          <p className="muted">Регистрация открыта. Сетка появится после запуска турнира.</p>
-        ) : (
-          <p className="muted">
-            {tournament.matches.length > 0
-              ? `Матчей в сетке: ${tournament.matches.length}`
-              : "Сетка появится после запуска турнира"}
-          </p>
-        )}
+        <TournamentMatches tournament={tournament} />
       </div>
       <div className="panel">
         <TournamentLink id={tournament.id} />
       </div>
-
     </section>
   );
 }

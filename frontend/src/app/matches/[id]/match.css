@@ -1,0 +1,53 @@
+.match-summary {
+  text-align: center;
+}
+.match-summary .match-score {
+  font-size: clamp(32px, 7vw, 56px);
+  font-weight: 800;
+  margin: 16px 0;
+  font-variant-numeric: tabular-nums;
+}
+.match-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.match-team h2 {
+  overflow-wrap: anywhere;
+}
+.match-page a:not(.back-link) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.match-team-winner {
+  border-top: 3px solid var(--color-accent) !important;
+}
+.match-winner-label {
+  color: var(--color-error);
+  margin-bottom: 16px;
+}
+.match-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.match-roster li {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  border-top: 1px solid var(--color-border);
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+.match-roster .muted {
+  font-size: 13px;
+}
+.match-team button {
+  margin-top: 12px;
+}
+@media (max-width: 760px) {
+  .match-teams {
+    grid-template-columns: 1fr;
+  }
+}

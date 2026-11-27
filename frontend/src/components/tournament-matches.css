@@ -1,0 +1,40 @@
+.tournament-rounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 24px;
+}
+.tournament-round ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.bracket-match {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  background: var(--color-inset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.bracket-match:hover {
+  border-color: var(--color-accent);
+}
+.bracket-match > .muted {
+  font-size: 12px;
+}
+.bracket-team {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.bracket-team > span:first-child {
+  min-width: 0;
+}
+.bracket-winner {
+  color: var(--color-error);
+  font-weight: 800;
+}

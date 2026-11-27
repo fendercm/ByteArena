@@ -189,3 +189,22 @@ test("POST close-registration calls the tournament close endpoint", async () => 
   assert.equal((await api.closeRegistration(5)).status, "closed");
 });
 
+test("match details use the requested ID, no cache and abort signal", async () => {
+  const controller = new AbortController();
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/matches/42");
+    assert.equal(options.cache, "no-store");
+    assert.equal(options.signal, controller.signal);
+    assert.equal(options.credentials, "include");
+    return Response.json({ id: 42, score1: 0, score2: 13 });
+  };
+  assert.equal((await api.getMatch(42, controller.signal)).score1, 0);
+});
+
+test("match 404 remains distinct from network errors", async () => {
+  globalThis.fetch = async () => Response.json({ detail: "Матч не найден" }, { status: 404 });
+  await assert.rejects(
+    api.getMatch(999),
+    (error) => error instanceof ApiError && error.status === 404,
+  );
+});
