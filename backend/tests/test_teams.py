@@ -114,7 +114,6 @@ def test_get_team_returns_captain_members_and_tournaments(client, db, user) -> N
     ]
 
 
-
 def test_team_profile_shows_champion_and_elimination_round(client, db, user) -> None:
     team = Team(name="Night Wolves", captain_id=user.id)
     opponent = Team(name="Rivals", captain_id=user.id)
@@ -130,11 +129,20 @@ def test_team_profile_shows_champion_and_elimination_round(client, db, user) -> 
     db.add(tournament)
     db.flush()
     db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"))
-    db.add(Match(
-        tournament_id=tournament.id, round=1, position=1,
-        team1_id=team.id, team2_id=opponent.id, score1=13, score2=8,
-        winner_id=team.id, status="finished", next_match_id=None,
-    ))
+    db.add(
+        Match(
+            tournament_id=tournament.id,
+            round=1,
+            position=1,
+            team1_id=team.id,
+            team2_id=opponent.id,
+            score1=13,
+            score2=8,
+            winner_id=team.id,
+            status="finished",
+            next_match_id=None,
+        )
+    )
     db.commit()
 
     response = client.get(f"/teams/{team.id}")
@@ -150,17 +158,31 @@ def test_team_profile_reports_round_of_elimination(client, db, user) -> None:
     db.add_all([team, opponent])
     db.flush()
     tournament = Tournament(
-        title="Finished Cup", starts_at=datetime(2026, 7, 1, tzinfo=UTC),
-        max_teams=4, organizer_id=user.id, status="finished",
+        title="Finished Cup",
+        starts_at=datetime(2026, 7, 1, tzinfo=UTC),
+        max_teams=4,
+        organizer_id=user.id,
+        status="finished",
     )
     db.add(tournament)
     db.flush()
-    db.add_all([
-        TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"),
-        Match(tournament_id=tournament.id, round=2, position=1,
-              team1_id=team.id, team2_id=opponent.id, score1=8, score2=13,
-              winner_id=opponent.id, status="finished", next_match_id=None),
-    ])
+    db.add_all(
+        [
+            TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"),
+            Match(
+                tournament_id=tournament.id,
+                round=2,
+                position=1,
+                team1_id=team.id,
+                team2_id=opponent.id,
+                score1=8,
+                score2=13,
+                winner_id=opponent.id,
+                status="finished",
+                next_match_id=None,
+            ),
+        ]
+    )
     db.commit()
 
     result = client.get(f"/teams/{team.id}").json()["tournaments"][0]

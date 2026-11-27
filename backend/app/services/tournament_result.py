@@ -28,7 +28,8 @@ def get_tournament_result(db: Session, tournament: Tournament, team_id: int) -> 
     ).all()
 
     losses = [
-        match for match in matches
+        match
+        for match in matches
         if match.status == "finished" and match.winner_id is not None and match.winner_id != team_id
     ]
     if losses:
