@@ -81,6 +81,17 @@ export default function TournamentRegisterPage({ params }) {
     try {
       // При ошибке второго запроса повторяем заявку с уже созданной командой.
       if (createdTeam.current?.key !== key) {
+        // Команда создаётся до заявки, поэтому сначала проверяем, что заявку ещё примут:
+        // иначе после отказа в базе осталась бы лишняя команда.
+        const tournament = await api.getTournament(tournamentId);
+        if (tournament.status !== "registration") {
+          setError("Регистрация закрыта");
+          return;
+        }
+        if (tournament.teams_count >= tournament.max_teams) {
+          setError("Мест нет");
+          return;
+        }
         const team = await api.createTeam(data);
         createdTeam.current = { key, id: team.id };
       }
