@@ -29,21 +29,6 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 tournaments_router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-def _fake_team(team_id: int, name: str, captain_id: int) -> TeamOut:
-    return TeamOut(
-        id=team_id,
-        name=name,
-        captain_id=captain_id,
-        members=[
-            TeamMemberOut(nickname="Fedor", user_id=captain_id, role="captain"),
-            TeamMemberOut(nickname="Ali", user_id=2, role="main"),
-            TeamMemberOut(nickname="Mira", user_id=None, role="main"),
-            TeamMemberOut(nickname="Nova", user_id=4, role="main"),
-            TeamMemberOut(nickname="Ghost", user_id=None, role="main"),
-        ],
-    )
-
-
 @router.post(
     "",
     response_model=TeamOut,
@@ -419,8 +404,6 @@ def get_my_registration(
     db: DbSession,
 ) -> RegistrationOut:
     """Вернуть заявку команды, в состав которой входит текущий пользователь."""
-    from app.models.tournament_team import TournamentTeam
-
     registration = db.execute(
         select(TournamentTeam)
         .join(TeamMember, TeamMember.team_id == TournamentTeam.team_id)
