@@ -8,6 +8,7 @@ import TournamentRegistration from "@/components/TournamentRegistration";
 import TournamentTeams from "@/components/TournamentTeams";
 import { api, formatDate } from "@/lib/api";
 import { getChampion } from "@/lib/bracket";
+import { gameInfo } from "@/lib/games";
 import "../tournaments.css";
 
 const statuses = {
@@ -119,7 +120,7 @@ export default function TournamentPage({ params }) {
         </div>
         <div>
           <span className="muted">Игра</span>
-          <p>Counter-Strike 2</p>
+          <p>{gameInfo(tournament.game).name}</p>
         </div>
       </div>
       <TournamentRegistration key={tournament.id} tournament={tournament} />
