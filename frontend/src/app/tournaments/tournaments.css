@@ -114,7 +114,7 @@
   padding-top: 20px;
 }
 
-.tournament-page .tournament-form>.error-message {
+.tournament-page .tournament-form > .error-message {
   margin-top: 16px;
 }
 

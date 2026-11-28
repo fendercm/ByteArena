@@ -51,14 +51,7 @@ function MemberAvatar({ member }) {
   );
 }
 
-function RegistrationCard({
-  registration,
-  isRegistrationOpen,
-  isFull,
-  isBusy,
-  error,
-  onDecide,
-}) {
+function RegistrationCard({ registration, isRegistrationOpen, isFull, isBusy, error, onDecide }) {
   const captain = registration.members.find((member) => member.role === "captain");
   const canApprove = registration.status !== "approved";
   const canReject = registration.status !== "rejected";
@@ -190,9 +183,7 @@ export default function TournamentManagePage({ params }) {
     setCloseError("");
     try {
       const updated = await api.decideRegistration(registrationId, nextStatus);
-      setRegistrations((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      setRegistrations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       if (nextStatus !== "approved") {
         setConfirmClose(false);
       }
@@ -302,11 +293,7 @@ export default function TournamentManagePage({ params }) {
           {loadError.message}
         </p>
         <div>
-          <button
-            type="button"
-            className="button"
-            onClick={() => setAttempt((value) => value + 1)}
-          >
+          <button type="button" className="button" onClick={() => setAttempt((value) => value + 1)}>
             Повторить
           </button>
         </div>
@@ -446,34 +433,56 @@ export default function TournamentManagePage({ params }) {
           <div className="close-registration-block">
             <p className="muted">Регистрация закрыта. Можно построить сетку и запустить турнир.</p>
             {!confirmStart ? (
-              <button type="button" className="button" disabled={starting}
-                onClick={() => setConfirmStart(true)}>
+              <button
+                type="button"
+                className="button"
+                disabled={starting}
+                onClick={() => setConfirmStart(true)}
+              >
                 Запустить турнир
               </button>
             ) : (
               <div className="confirm-box" role="region" aria-label="Подтверждение запуска">
                 <p>Построить сетку из подтверждённых команд и запустить турнир?</p>
                 <div className="confirm-actions">
-                  <button type="button" className="button button-small"
-                    disabled={starting} onClick={handleStartTournament}>
+                  <button
+                    type="button"
+                    className="button button-small"
+                    disabled={starting}
+                    onClick={handleStartTournament}
+                  >
                     {starting ? "Запускаем…" : "Подтвердить запуск"}
                   </button>
-                  <button type="button" className="button button-secondary button-small"
-                    disabled={starting} onClick={() => setConfirmStart(false)}>
+                  <button
+                    type="button"
+                    className="button button-secondary button-small"
+                    disabled={starting}
+                    onClick={() => setConfirmStart(false)}
+                  >
                     Отмена
                   </button>
                 </div>
               </div>
             )}
-            {startError && <p className="error-message" role="alert">{startError}</p>}
+            {startError && (
+              <p className="error-message" role="alert">
+                {startError}
+              </p>
+            )}
           </div>
         ) : tournament.status === "registration" || tournament.status === "draft" ? (
           <p className="muted">Закройте регистрацию, чтобы перейти к запуску турнира.</p>
         ) : (
           <>
-            <MatchResultEditor matches={tournament.matches ?? []} onUpdated={setTournament} />
+            <MatchResultEditor
+              matches={tournament.matches ?? []}
+              teams={tournament.teams ?? []}
+              onUpdated={setTournament}
+            />
             {tournament.status === "finished" && (
-              <p className="success-notice" role="status">Турнир завершён. Все результаты сохранены.</p>
+              <p className="success-notice" role="status">
+                Турнир завершён. Все результаты сохранены.
+              </p>
             )}
           </>
         )}
