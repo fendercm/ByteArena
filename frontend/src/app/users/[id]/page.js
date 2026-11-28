@@ -126,13 +126,16 @@ export default function UserPage({ params }) {
         {user.tournaments?.length > 0 ? (
           <ul>
             {user.tournaments.map((tournament) => {
-              const result = tournament.result === "champion"
-                ? "Чемпион"
-                : tournament.result === "eliminated"
-                  ? tournament.eliminated_round
-                    ? `Выбыли в раунде ${tournament.eliminated_round}`
-                    : "Выбыли"
-                  : tournament.result === "running" ? "Идёт" : null;
+              const result =
+                tournament.result === "champion"
+                  ? "Чемпион"
+                  : tournament.result === "eliminated"
+                    ? tournament.eliminated_round
+                      ? `Выбыли в раунде ${tournament.eliminated_round}`
+                      : "Выбыли"
+                    : tournament.result === "running"
+                      ? "Идёт"
+                      : null;
               return (
                 <li key={tournament.id}>
                   <span>{tournament.title}</span>

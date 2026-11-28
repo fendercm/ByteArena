@@ -125,17 +125,24 @@ export const teamHandlers = [
       const team = findTeam(teamId);
       return team ? { ...getTeamOut(teamId), members: getTeamOut(teamId).members } : null;
     };
-    return HttpResponse.json({ ...match, team1: teamOut(match.team1_id), team2: teamOut(match.team2_id) });
+    return HttpResponse.json({
+      ...match,
+      team1: teamOut(match.team1_id),
+      team2: teamOut(match.team2_id),
+    });
   }),
 
   http.post("/api/tournaments/:tournamentId/start", async ({ params }) => {
     const tournament = findTournament(Number(params.tournamentId));
     if (!tournament) return error("Турнир не найден", 404);
     if (tournament.organizer_id !== currentUserId) return error("Недостаточно прав", 403);
-    if (tournament.status !== "closed") return error(
-      tournament.status === "running" || tournament.status === "finished" ? "Турнир уже запущен" : "Регистрация ещё не закрыта",
-      409,
-    );
+    if (tournament.status !== "closed")
+      return error(
+        tournament.status === "running" || tournament.status === "finished"
+          ? "Турнир уже запущен"
+          : "Регистрация ещё не закрыта",
+        409,
+      );
     tournament.status = "running";
     return HttpResponse.json({ ...tournament, teams: [], matches: [] });
   }),
@@ -145,7 +152,8 @@ export const teamHandlers = [
     if (!match) return error("Матч не найден", 404);
     const tournament = findTournament(match.tournament_id);
     if (tournament?.organizer_id !== currentUserId) return error("Недостаточно прав", 403);
-    if (match.team1_id === null || match.team2_id === null) return error("В матче ещё нет обеих команд", 409);
+    if (match.team1_id === null || match.team2_id === null)
+      return error("В матче ещё нет обеих команд", 409);
     const body = await request.json();
     match.score1 = body.score1;
     match.score2 = body.score2;

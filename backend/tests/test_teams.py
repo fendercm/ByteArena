@@ -1,5 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from app.models.match import Match
 from app.models.team import Team
 from app.models.team_member import TeamMember
@@ -188,6 +190,31 @@ def test_team_profile_reports_round_of_elimination(client, db, user) -> None:
     result = client.get(f"/teams/{team.id}").json()["tournaments"][0]
     assert result["result"] == "eliminated"
     assert result["eliminated_round"] == 2
+
+
+@pytest.mark.parametrize("application_status", ["pending", "rejected"])
+def test_team_without_approved_application_has_no_result(
+    client, db, user, application_status
+) -> None:
+    team = Team(name="Night Wolves", captain_id=user.id)
+    db.add(team)
+    db.flush()
+    tournament = Tournament(
+        title="Running Cup",
+        starts_at=datetime(2026, 7, 1, tzinfo=UTC),
+        max_teams=4,
+        organizer_id=user.id,
+        status="running",
+    )
+    db.add(tournament)
+    db.flush()
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status=application_status))
+    db.commit()
+
+    result = client.get(f"/teams/{team.id}").json()["tournaments"][0]
+    assert result["application_status"] == application_status
+    assert result["result"] is None
+    assert result["eliminated_round"] is None
 
 
 def test_get_unknown_team_returns_404(client) -> None:

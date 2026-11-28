@@ -17,11 +17,13 @@ export const registrationRows = [
 
 export function getTournamentResult(tournament, teamId) {
   const teamMatches = matches.filter(
-    (match) => match.tournament_id === tournament.id &&
+    (match) =>
+      match.tournament_id === tournament.id &&
       (match.team1_id === teamId || match.team2_id === teamId),
   );
   const loss = teamMatches.find(
-    (match) => match.status === "finished" && match.winner_id !== null && match.winner_id !== teamId,
+    (match) =>
+      match.status === "finished" && match.winner_id !== null && match.winner_id !== teamId,
   );
   if (loss) return { result: "eliminated", eliminated_round: loss.round };
   if (tournament.status === "finished") {

@@ -22,7 +22,7 @@ from app.schemas.team import (
     TeamProfileTournament,
     TournamentTeamsOut,
 )
-from app.services.tournament_result import get_tournament_result
+from app.services.tournament_result import TournamentResult, get_tournament_result
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -198,7 +198,12 @@ def get_team(team_id: int, db: DbSession) -> TeamProfile:
 
     tournaments = []
     for tournament, registration in tournament_rows:
-        outcome = get_tournament_result(db, tournament, team.id)
+        # итог турнира есть только у команды, чью заявку одобрили
+        outcome = (
+            get_tournament_result(db, tournament, team.id)
+            if registration.status == "approved"
+            else TournamentResult(None)
+        )
         tournaments.append(
             TeamProfileTournament(
                 id=tournament.id,

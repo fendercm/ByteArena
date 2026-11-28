@@ -48,7 +48,8 @@ def get_tournament_result(db: Session, tournament: Tournament, team_id: int) -> 
             return TournamentResult("eliminated", None)
         return TournamentResult(None)
 
-    if tournament.status == "running":
+    # «Идёт» — только если команда в сетке: у отклонённой или ожидающей заявки матчей нет
+    if tournament.status == "running" and matches:
         return TournamentResult("running")
 
     return TournamentResult(None)
