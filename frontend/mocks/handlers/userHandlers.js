@@ -1,6 +1,8 @@
 import { http, HttpResponse } from "msw";
 import users from "../data/users.json";
 import teamsData from "../data/teams.json";
+import tournaments from "../data/tournaments.json";
+import { getTournamentResult, registrationRows } from "../tournamentResults";
 
 function getUserProfile(userId) {
   const user = users.find((item) => item.id === userId);
@@ -15,9 +17,28 @@ function getUserProfile(userId) {
     nickname: user.nickname,
     avatar_url: user.avatar_url,
     team: team ? { id: team.id, name: team.name } : null,
-    // The mock dataset does not define tournament registrations.
-    // Keep this empty rather than inventing participation data.
-    tournaments: [],
+    tournaments: [
+      ...new Set(
+        teamsData.team_members
+          .filter((member) => member.user_id === userId)
+          .map((member) => member.team_id),
+      ),
+    ]
+      .flatMap((teamId) =>
+        registrationRows
+          .filter((row) => row.team_id === teamId && row.status === "approved")
+          .map((row) => {
+            const tournament = tournaments.find((item) => item.id === row.tournament_id);
+            return tournament
+              ? {
+                  id: tournament.id,
+                  title: tournament.title,
+                  ...getTournamentResult(tournament, teamId),
+                }
+              : null;
+          }),
+      )
+      .filter(Boolean),
   };
 }
 

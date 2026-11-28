@@ -125,9 +125,24 @@ export default function UserPage({ params }) {
         <h2>Турниры</h2>
         {user.tournaments?.length > 0 ? (
           <ul>
-            {user.tournaments.map((tournament) => (
-              <li key={tournament.id}>{tournament.title}</li>
-            ))}
+            {user.tournaments.map((tournament) => {
+              const result =
+                tournament.result === "champion"
+                  ? "Чемпион"
+                  : tournament.result === "eliminated"
+                    ? tournament.eliminated_round
+                      ? `Выбыли в раунде ${tournament.eliminated_round}`
+                      : "Выбыли"
+                    : tournament.result === "running"
+                      ? "Идёт"
+                      : null;
+              return (
+                <li key={tournament.id}>
+                  <span>{tournament.title}</span>
+                  {result && <span> — {result}</span>}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p>Пока нет турниров</p>

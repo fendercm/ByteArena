@@ -1,5 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
+from app.models.match import Match
 from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.tournament import Tournament
@@ -107,8 +110,111 @@ def test_get_team_returns_captain_members_and_tournaments(client, db, user) -> N
             "starts_at": "2026-12-01T18:00:00Z",
             "status": "closed",
             "application_status": "approved",
+            "result": None,
+            "eliminated_round": None,
         }
     ]
+
+
+def test_team_profile_shows_champion_and_elimination_round(client, db, user) -> None:
+    team = Team(name="Night Wolves", captain_id=user.id)
+    opponent = Team(name="Rivals", captain_id=user.id)
+    db.add_all([team, opponent])
+    db.flush()
+    tournament = Tournament(
+        title="Finished Cup",
+        starts_at=datetime(2026, 7, 1, tzinfo=UTC),
+        max_teams=4,
+        organizer_id=user.id,
+        status="finished",
+    )
+    db.add(tournament)
+    db.flush()
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"))
+    db.add(
+        Match(
+            tournament_id=tournament.id,
+            round=1,
+            position=1,
+            team1_id=team.id,
+            team2_id=opponent.id,
+            score1=13,
+            score2=8,
+            winner_id=team.id,
+            status="finished",
+            next_match_id=None,
+        )
+    )
+    db.commit()
+
+    response = client.get(f"/teams/{team.id}")
+    assert response.status_code == 200
+    result = response.json()["tournaments"][0]
+    assert result["result"] == "champion"
+    assert result["eliminated_round"] is None
+
+
+def test_team_profile_reports_round_of_elimination(client, db, user) -> None:
+    team = Team(name="Night Wolves", captain_id=user.id)
+    opponent = Team(name="Rivals", captain_id=user.id)
+    db.add_all([team, opponent])
+    db.flush()
+    tournament = Tournament(
+        title="Finished Cup",
+        starts_at=datetime(2026, 7, 1, tzinfo=UTC),
+        max_teams=4,
+        organizer_id=user.id,
+        status="finished",
+    )
+    db.add(tournament)
+    db.flush()
+    db.add_all(
+        [
+            TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="approved"),
+            Match(
+                tournament_id=tournament.id,
+                round=2,
+                position=1,
+                team1_id=team.id,
+                team2_id=opponent.id,
+                score1=8,
+                score2=13,
+                winner_id=opponent.id,
+                status="finished",
+                next_match_id=None,
+            ),
+        ]
+    )
+    db.commit()
+
+    result = client.get(f"/teams/{team.id}").json()["tournaments"][0]
+    assert result["result"] == "eliminated"
+    assert result["eliminated_round"] == 2
+
+
+@pytest.mark.parametrize("application_status", ["pending", "rejected"])
+def test_team_without_approved_application_has_no_result(
+    client, db, user, application_status
+) -> None:
+    team = Team(name="Night Wolves", captain_id=user.id)
+    db.add(team)
+    db.flush()
+    tournament = Tournament(
+        title="Running Cup",
+        starts_at=datetime(2026, 7, 1, tzinfo=UTC),
+        max_teams=4,
+        organizer_id=user.id,
+        status="running",
+    )
+    db.add(tournament)
+    db.flush()
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status=application_status))
+    db.commit()
+
+    result = client.get(f"/teams/{team.id}").json()["tournaments"][0]
+    assert result["application_status"] == application_status
+    assert result["result"] is None
+    assert result["eliminated_round"] is None
 
 
 def test_get_unknown_team_returns_404(client) -> None:

@@ -3,21 +3,10 @@ import teamsData from "../data/teams.json";
 import users from "../data/users.json";
 import tournaments from "../data/tournaments.json";
 import { homeTournaments } from "../../src/data/home-tournaments";
+import matches from "../data/matches.json";
+import { getTournamentResult, registrationRows } from "../tournamentResults";
 
 const currentUserId = 1;
-const registrationRows = [
-  { id: 1, tournament_id: 1, team_id: 1, status: "approved" },
-  { id: 2, tournament_id: 1, team_id: 2, status: "pending" },
-  { id: 3, tournament_id: 2, team_id: 1, status: "rejected" },
-  { id: 4, tournament_id: 3, team_id: 1, status: "approved" },
-  { id: 5, tournament_id: 7, team_id: 2, status: "approved" },
-  { id: 6, tournament_id: 24, team_id: 1, status: "approved" },
-  { id: 7, tournament_id: 25, team_id: 1, status: "approved" },
-  { id: 8, tournament_id: 26, team_id: 2, status: "approved" },
-  { id: 9, tournament_id: 27, team_id: 2, status: "pending" },
-  { id: 10, tournament_id: 28, team_id: 1, status: "approved" },
-  { id: 11, tournament_id: 29, team_id: 2, status: "approved" },
-];
 let nextTeamId = Math.max(...teamsData.teams.map((team) => team.id)) + 1;
 let nextRegistrationId = Math.max(...registrationRows.map((registration) => registration.id)) + 1;
 
@@ -76,6 +65,7 @@ function getTeamProfile(teamId) {
           starts_at: tournament.starts_at,
           status: tournament.status,
           application_status: registration.status,
+          ...getTournamentResult(tournament, teamId),
         };
       })
       .filter(Boolean)
@@ -127,6 +117,51 @@ function error(detail, status) {
 }
 
 export const teamHandlers = [
+  http.get("/api/matches/:matchId", ({ params }) => {
+    const match = matches.find((item) => item.id === Number(params.matchId));
+    if (!match) return error("Матч не найден", 404);
+    const teamOut = (teamId) => {
+      if (teamId === null) return null;
+      const team = findTeam(teamId);
+      return team ? { ...getTeamOut(teamId), members: getTeamOut(teamId).members } : null;
+    };
+    return HttpResponse.json({
+      ...match,
+      team1: teamOut(match.team1_id),
+      team2: teamOut(match.team2_id),
+    });
+  }),
+
+  http.post("/api/tournaments/:tournamentId/start", async ({ params }) => {
+    const tournament = findTournament(Number(params.tournamentId));
+    if (!tournament) return error("Турнир не найден", 404);
+    if (tournament.organizer_id !== currentUserId) return error("Недостаточно прав", 403);
+    if (tournament.status !== "closed")
+      return error(
+        tournament.status === "running" || tournament.status === "finished"
+          ? "Турнир уже запущен"
+          : "Регистрация ещё не закрыта",
+        409,
+      );
+    tournament.status = "running";
+    return HttpResponse.json({ ...tournament, teams: [], matches: [] });
+  }),
+
+  http.post("/api/matches/:matchId/result", async ({ params, request }) => {
+    const match = matches.find((item) => item.id === Number(params.matchId));
+    if (!match) return error("Матч не найден", 404);
+    const tournament = findTournament(match.tournament_id);
+    if (tournament?.organizer_id !== currentUserId) return error("Недостаточно прав", 403);
+    if (match.team1_id === null || match.team2_id === null)
+      return error("В матче ещё нет обеих команд", 409);
+    const body = await request.json();
+    match.score1 = body.score1;
+    match.score2 = body.score2;
+    match.winner_id = body.score1 > body.score2 ? match.team1_id : match.team2_id;
+    match.status = "finished";
+    if (match.next_match_id === null) tournament.status = "finished";
+    return HttpResponse.json(match);
+  }),
   http.get("/api/users/search", ({ request }) => {
     const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
     if (query.length < 2) return HttpResponse.json([]);

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from app.schemas.team import TeamShort
@@ -12,6 +14,8 @@ class UserSearchOut(BaseModel):
 class TournamentProfileOut(BaseModel):
     id: int
     title: str
+    result: Literal["champion", "eliminated", "running"] | None = None
+    eliminated_round: int | None = None
 
 
 class UserProfileOut(BaseModel):

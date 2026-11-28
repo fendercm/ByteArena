@@ -12,6 +12,7 @@ from app.schemas.auth import UserMeOut
 from app.schemas.common import ErrorOut
 from app.schemas.team import TeamShort
 from app.schemas.user import TournamentProfileOut, UserProfileOut, UserSearchOut
+from app.services.tournament_result import get_tournament_result
 
 router = APIRouter(prefix="", tags=["users"])
 
@@ -80,17 +81,19 @@ def get_user_profile(user_id: int, db: DbSession) -> UserProfileOut:
             detail="Игрок не найден",
         )
 
-    tournaments = db.scalars(
-        select(Tournament)
+    tournament_rows = db.execute(
+        select(Tournament, TournamentTeam.team_id)
         .join(TournamentTeam, TournamentTeam.tournament_id == Tournament.id)
         .join(TeamMember, TeamMember.team_id == TournamentTeam.team_id)
         .where(
             TeamMember.user_id == user_id,
             TournamentTeam.status == "approved",
         )
-        .distinct()
         .order_by(Tournament.starts_at.desc())
     ).all()
+    tournaments_by_id = {}
+    for tournament, team_id in tournament_rows:
+        tournaments_by_id.setdefault(tournament.id, (tournament, team_id))
 
     return UserProfileOut(
         id=user.id,
@@ -98,7 +101,12 @@ def get_user_profile(user_id: int, db: DbSession) -> UserProfileOut:
         avatar_url=user.avatar_url,
         team=_user_team(db, user_id),
         tournaments=[
-            TournamentProfileOut(id=tournament.id, title=tournament.title)
-            for tournament in tournaments
+            TournamentProfileOut(
+                id=tournament.id,
+                title=tournament.title,
+                result=(outcome := get_tournament_result(db, tournament, team_id)).result,
+                eliminated_round=outcome.eliminated_round,
+            )
+            for tournament, team_id in tournaments_by_id.values()
         ],
     )
