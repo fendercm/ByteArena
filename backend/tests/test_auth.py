@@ -134,5 +134,5 @@ def test_debug_login_is_hidden_unless_enabled(
     assert client.post("/auth/debug-login/1").status_code == 404
 
     monkeypatch.setattr(settings, "debug_auth_enabled", True)
-    assert client.post("/auth/debug-login/1").status_code == 307
+    assert client.post("/auth/debug-login/1").status_code == 303
     assert client.get("/me").json()["nickname"] == "Tester"

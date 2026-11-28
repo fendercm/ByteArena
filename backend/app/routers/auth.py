@@ -39,9 +39,11 @@ def _delete_cookie(response: Response, key: str) -> None:
     response.delete_cookie(key=key, httponly=True, secure=settings.cookie_secure, samesite="lax")
 
 
-def _login_response(user: User) -> RedirectResponse:
+def _login_response(
+    user: User, status_code: int = status.HTTP_307_TEMPORARY_REDIRECT
+) -> RedirectResponse:
     """После входа — на главную, с cookie входа на 7 дней."""
-    response = RedirectResponse(url="/", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    response = RedirectResponse(url="/", status_code=status_code)
     _set_cookie(
         response,
         ACCESS_TOKEN_COOKIE,
@@ -149,7 +151,8 @@ def logout() -> Response:
 
 @router.post(
     "/debug-login/{user_id}",
-    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+    # 303, а не 307: после POST браузер должен открыть главную обычным GET, а не повторить POST
+    status_code=status.HTTP_303_SEE_OTHER,
     responses={404: {"model": ErrorOut}},
 )
 def debug_login(user_id: int, db: DbSession) -> RedirectResponse:
@@ -157,4 +160,4 @@ def debug_login(user_id: int, db: DbSession) -> RedirectResponse:
     user = db.get(User, user_id) if settings.debug_auth_enabled else None
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Не найдено")
-    return _login_response(user)
+    return _login_response(user, status.HTTP_303_SEE_OTHER)
