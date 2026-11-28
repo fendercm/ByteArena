@@ -338,17 +338,6 @@ def register_team_for_tournament(
             detail="Заявку подаёт капитан команды",
         )
 
-    approved_count = db.scalar(
-        select(func.count())
-        .select_from(TournamentTeam)
-        .where(
-            TournamentTeam.tournament_id == tournament_id,
-            TournamentTeam.status == "approved",
-        )
-    )
-    if approved_count >= tournament.max_teams:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Мест нет")
-
     if (
         db.scalar(
             select(TournamentTeam.id).where(
@@ -362,6 +351,17 @@ def register_team_for_tournament(
             status_code=status.HTTP_409_CONFLICT,
             detail="Команда уже подала заявку",
         )
+
+    approved_count = db.scalar(
+        select(func.count())
+        .select_from(TournamentTeam)
+        .where(
+            TournamentTeam.tournament_id == tournament_id,
+            TournamentTeam.status == "approved",
+        )
+    )
+    if approved_count >= tournament.max_teams:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Мест нет")
 
     current_member = aliased(TeamMember)
     other_member = aliased(TeamMember)

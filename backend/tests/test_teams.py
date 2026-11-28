@@ -393,6 +393,30 @@ def test_register_team_for_tournament_rejects_duplicate_application(logged_in, d
     assert response.json() == {"detail": "Команда уже подала заявку"}
 
 
+def test_duplicate_application_is_reported_even_when_tournament_is_full(
+    logged_in, db, user
+) -> None:
+    tournament, team = create_tournament_and_team(db, user)
+    tournament.max_teams = 2
+    db.add(TournamentTeam(tournament_id=tournament.id, team_id=team.id, status="pending"))
+    approved_teams = [Team(name=f"Approved {index}", captain_id=user.id) for index in range(2)]
+    db.add_all(approved_teams)
+    db.flush()
+    db.add_all(
+        TournamentTeam(tournament_id=tournament.id, team_id=approved.id, status="approved")
+        for approved in approved_teams
+    )
+    db.commit()
+
+    response = logged_in.post(
+        f"/tournaments/{tournament.id}/registrations",
+        json={"team_id": team.id},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Команда уже подала заявку"}
+
+
 def test_register_team_for_tournament_rejects_player_in_another_team(logged_in, db, user) -> None:
     tournament, team = create_tournament_and_team(db, user)
     shared_player = User(discord_id="201", nickname="Shared Player")
