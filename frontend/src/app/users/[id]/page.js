@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getUserProfile } from "@/lib/api";
 
 export default function UserPage({ params }) {
+  const { id } = use(params);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -21,7 +22,7 @@ export default function UserPage({ params }) {
       setUser(null);
 
       try {
-        const data = await getUserProfile(params.id);
+        const data = await getUserProfile(id);
 
         if (!cancelled) setUser(data);
       } catch (err) {
@@ -44,7 +45,7 @@ export default function UserPage({ params }) {
     return () => {
       cancelled = true;
     };
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (

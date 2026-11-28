@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { api, formatDate } from "@/lib/api";
 import "../../tournaments/tournaments.css";
 import "./match.css";
@@ -46,10 +46,11 @@ function MatchTeam({ team, winner, emptyLabel }) {
 }
 
 export default function MatchPage({ params }) {
+  const { id } = use(params);
   const [match, setMatch] = useState(null);
   const [error, setError] = useState(null);
   const [attempt, setAttempt] = useState(0);
-  const matchId = params.id;
+  const matchId = id;
 
   useEffect(() => {
     const controller = new AbortController();

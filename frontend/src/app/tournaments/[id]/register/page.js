@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { use, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import RosterField, { PlayerAvatar } from "@/components/RosterField";
 import { api } from "@/lib/api";
@@ -41,6 +41,7 @@ function validate(name, members, captain) {
 }
 
 export default function TournamentRegisterPage({ params }) {
+  const { id } = use(params);
   const { user, loading, error: authError, refresh } = useAuth();
   const [name, setName] = useState("");
   const [members, setMembers] = useState(() => slots.map(() => ({ nickname: "", player: null })));
@@ -50,7 +51,7 @@ export default function TournamentRegisterPage({ params }) {
   const [submitted, setSubmitted] = useState(false);
   const inFlight = useRef(false);
   const createdTeam = useRef(null);
-  const tournamentId = params.id;
+  const tournamentId = id;
   const back = `/tournaments/${encodeURIComponent(tournamentId)}`;
 
   async function submit(event) {

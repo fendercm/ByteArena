@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { api, formatDate } from "@/lib/api";
 import { discordLoginUrl } from "@/lib/auth";
@@ -133,6 +133,7 @@ function RegistrationCard({ registration, isRegistrationOpen, isFull, isBusy, er
 }
 
 export default function TournamentManagePage({ params }) {
+  const { id } = use(params);
   const { user, loading: authLoading, error: authError, refresh } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [registrations, setRegistrations] = useState([]);
@@ -158,8 +159,8 @@ export default function TournamentManagePage({ params }) {
     setRegistrations([]);
 
     Promise.all([
-      api.getTournament(params.id, controller.signal),
-      api.getRegistrations(params.id, controller.signal),
+      api.getTournament(id, controller.signal),
+      api.getRegistrations(id, controller.signal),
     ])
       .then(([tournamentData, registrationsData]) => {
         if (controller.signal.aborted) return;
@@ -175,7 +176,7 @@ export default function TournamentManagePage({ params }) {
       });
 
     return () => controller.abort();
-  }, [params.id, user, authLoading, attempt]);
+  }, [id, user, authLoading, attempt]);
 
   async function handleDecide(registrationId, nextStatus) {
     setBusyId(registrationId);
@@ -245,7 +246,7 @@ export default function TournamentManagePage({ params }) {
   if (!user || loadError?.status === 401) {
     return (
       <section className="tournament-page page-stack">
-        <Link className="back-link" href={`/tournaments/${params.id}`}>
+        <Link className="back-link" href={`/tournaments/${id}`}>
           ← К турниру
         </Link>
         <div className="panel compact-panel">
@@ -262,13 +263,13 @@ export default function TournamentManagePage({ params }) {
   if (loadError?.status === 403) {
     return (
       <section className="tournament-page page-stack">
-        <Link className="back-link" href={`/tournaments/${params.id}`}>
+        <Link className="back-link" href={`/tournaments/${id}`}>
           ← К турниру
         </Link>
         <div className="panel compact-panel">
           <h1>Доступ ограничен</h1>
           <p className="muted">Панель управления доступна только организатору турнира.</p>
-          <Link className="button button-secondary" href={`/tournaments/${params.id}`}>
+          <Link className="button button-secondary" href={`/tournaments/${id}`}>
             Вернуться к турниру
           </Link>
         </div>

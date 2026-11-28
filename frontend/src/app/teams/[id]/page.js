@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { api, formatDate } from "@/lib/api";
 import "./team.css";
 
@@ -72,6 +72,7 @@ function Member({ member }) {
 }
 
 export default function TeamPage({ params }) {
+  const { id } = use(params);
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -85,7 +86,7 @@ export default function TeamPage({ params }) {
     setTeam(null);
 
     api
-      .getTeam(params.id, controller.signal)
+      .getTeam(id, controller.signal)
       .then(setTeam, (err) => {
         if (controller.signal.aborted) return;
 
@@ -96,7 +97,7 @@ export default function TeamPage({ params }) {
       });
 
     return () => controller.abort();
-  }, [params.id, attempt]);
+  }, [id, attempt]);
 
   if (loading) {
     return (
