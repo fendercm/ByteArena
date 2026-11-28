@@ -68,11 +68,7 @@ export default function HeaderAccount() {
         <p className="header-account-error" role="status">
           {error || logoutError}
           {!user && (
-            <button
-              type="button"
-              className={buttonClass}
-              onClick={refresh}
-            >
+            <button type="button" className={buttonClass} onClick={refresh}>
               Повторить
             </button>
           )}

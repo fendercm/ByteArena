@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { gameInfo } from "@/lib/games";
 
 const statuses = { registration: "Регистрация", running: "Идёт", finished: "Завершён" };
 
 export default function TournamentCard({ tournament }) {
-  const { id, title, starts_at, status, teams_count, max_teams } = tournament;
+  const { id, title, starts_at, status, teams_count, max_teams, game } = tournament;
+  const { short, format } = gameInfo(game);
   const date = new Date(starts_at);
   const day = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
@@ -22,7 +24,7 @@ export default function TournamentCard({ tournament }) {
     <Link href={`/tournaments/${id}`} className="tournament-card">
       <div className="card-top">
         <span className={`badge badge-${status}`}>{statuses[status]}</span>
-        <span>CS2 · 5×5</span>
+        <span>{format ? `${short} · ${format}` : short}</span>
       </div>
       <h3>{title}</h3>
       <p className="card-date">

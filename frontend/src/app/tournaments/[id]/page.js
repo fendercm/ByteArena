@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import TournamentMatches from "@/components/TournamentMatches";
 import TournamentLink from "@/components/TournamentLink";
 import TournamentRegistration from "@/components/TournamentRegistration";
 import TournamentTeams from "@/components/TournamentTeams";
 import { api, formatDate } from "@/lib/api";
 import { getChampion } from "@/lib/bracket";
+import { gameInfo } from "@/lib/games";
 import "../tournaments.css";
 
 const statuses = {
@@ -19,6 +20,7 @@ const statuses = {
 };
 
 export default function TournamentPage({ params }) {
+  const { id } = use(params);
   const [tournament, setTournament] = useState(null);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(false);
@@ -34,7 +36,7 @@ export default function TournamentPage({ params }) {
       if (inFlight) return;
       inFlight = true;
       try {
-        const data = await api.getTournament(params.id, controller.signal);
+        const data = await api.getTournament(id, controller.signal);
         if (controller.signal.aborted) return;
         currentStatus = data.status;
         setTournament(data);
@@ -62,7 +64,7 @@ export default function TournamentPage({ params }) {
       window.removeEventListener("focus", refreshVisibleTournament);
       document.removeEventListener("visibilitychange", refreshVisibleTournament);
     };
-  }, [params.id, attempt]);
+  }, [id, attempt]);
 
   if (error && !tournament)
     return (
@@ -118,7 +120,7 @@ export default function TournamentPage({ params }) {
         </div>
         <div>
           <span className="muted">Игра</span>
-          <p>Counter-Strike 2</p>
+          <p>{gameInfo(tournament.game).name}</p>
         </div>
       </div>
       <TournamentRegistration key={tournament.id} tournament={tournament} />

@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="container footer-inner">
         <div className="footer-brand">
           <strong>ByteArena</strong>
-          <span>Любительские турниры CS2</span>
+          <span>Любительские киберспортивные турниры</span>
         </div>
         <div className="footer-links">
           <DiscordLink>Поддержка в Discord</DiscordLink>

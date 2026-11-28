@@ -689,7 +689,7 @@
           }
         ],
         "responses": {
-          "307": {
+          "303": {
             "description": "Successful Response",
             "content": {
               "application/json": {

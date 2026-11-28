@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import discord
 from app.config import settings
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from app.models.user import User
 
 PROFILE = discord.DiscordUser(
@@ -82,6 +84,32 @@ def test_second_login_updates_profile_without_duplicate(
     }
 
 
+def test_login_updates_nickname_in_team_rosters(
+    client: TestClient, db: Session, fake_discord
+) -> None:
+    client.get("/auth/discord/callback", params={"code": "a", "state": login(client)})
+    player = db.scalar(select(User))
+    team = Team(name="Wolves", captain_id=player.id)
+    db.add(team)
+    db.flush()
+    db.add_all(
+        [
+            TeamMember(
+                team_id=team.id, user_id=player.id, nickname=player.nickname, role="captain"
+            ),
+            TeamMember(team_id=team.id, user_id=None, nickname="Manual", role="main"),
+        ]
+    )
+    db.commit()
+
+    fake_discord["user"] = discord.DiscordUser(PROFILE.discord_id, "Renamed Wolf", None)
+    client.get("/auth/discord/callback", params={"code": "b", "state": login(client)})
+
+    db.expire_all()
+    nicknames = db.scalars(select(TeamMember.nickname).order_by(TeamMember.id)).all()
+    assert nicknames == ["Renamed Wolf", "Manual"]  # игрок без аккаунта не тронут
+
+
 def test_callback_with_wrong_state_is_rejected(client: TestClient, fake_discord) -> None:
     login(client)
     response = client.get("/auth/discord/callback", params={"code": "abc", "state": "чужой"})
@@ -134,5 +162,5 @@ def test_debug_login_is_hidden_unless_enabled(
     assert client.post("/auth/debug-login/1").status_code == 404
 
     monkeypatch.setattr(settings, "debug_auth_enabled", True)
-    assert client.post("/auth/debug-login/1").status_code == 307
+    assert client.post("/auth/debug-login/1").status_code == 303
     assert client.get("/me").json()["nickname"] == "Tester"

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { api, fieldErrors } from "@/lib/api";
+import { defaultGame, gameInfo } from "@/lib/games";
 import TournamentLoginLink from "@/components/TournamentLoginLink";
 import "../tournaments.css";
 
@@ -227,7 +228,9 @@ export default function CreateTournamentPage() {
             </p>
           )}
           <div className="form-actions">
-            <span className="muted">CS2 · время указано по Москве (UTC+3)</span>
+            <span className="muted">
+              {gameInfo(defaultGame).short} · время указано по Москве (UTC+3)
+            </span>
             <button className="button" type="submit" disabled={pending}>
               {pending ? "Создаём…" : "Создать турнир"}
             </button>

@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Cookie, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.auth import discord
 from app.auth.security import (
@@ -14,6 +14,7 @@ from app.auth.security import (
 )
 from app.config import settings
 from app.db import DbSession
+from app.models.team_member import TeamMember
 from app.models.user import User
 from app.schemas.common import ErrorOut
 
@@ -39,9 +40,11 @@ def _delete_cookie(response: Response, key: str) -> None:
     response.delete_cookie(key=key, httponly=True, secure=settings.cookie_secure, samesite="lax")
 
 
-def _login_response(user: User) -> RedirectResponse:
+def _login_response(
+    user: User, status_code: int = status.HTTP_307_TEMPORARY_REDIRECT
+) -> RedirectResponse:
     """После входа — на главную, с cookie входа на 7 дней."""
-    response = RedirectResponse(url="/", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    response = RedirectResponse(url="/", status_code=status_code)
     _set_cookie(
         response,
         ACCESS_TOKEN_COOKIE,
@@ -135,6 +138,13 @@ def discord_callback(
     # ник и аватар обновляются при каждом входе: человек мог сменить их в Discord
     user.nickname = profile.nickname
     user.avatar_url = profile.avatar_url
+    db.flush()  # у нового игрока появился id
+    # в составах хранится копия ника: обновляем её, чтобы в командах был текущий ник
+    db.execute(
+        update(TeamMember)
+        .where(TeamMember.user_id == user.id)
+        .values(nickname=profile.nickname[:32])
+    )
     db.commit()
     return _login_response(user)
 
@@ -149,7 +159,8 @@ def logout() -> Response:
 
 @router.post(
     "/debug-login/{user_id}",
-    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+    # 303, а не 307: после POST браузер должен открыть главную обычным GET, а не повторить POST
+    status_code=status.HTTP_303_SEE_OTHER,
     responses={404: {"model": ErrorOut}},
 )
 def debug_login(user_id: int, db: DbSession) -> RedirectResponse:
@@ -157,4 +168,4 @@ def debug_login(user_id: int, db: DbSession) -> RedirectResponse:
     user = db.get(User, user_id) if settings.debug_auth_enabled else None
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Не найдено")
-    return _login_response(user)
+    return _login_response(user, status.HTTP_303_SEE_OTHER)
