@@ -1,14 +1,34 @@
+.bracket-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 4px 4px 16px;
+}
+.bracket-scroll:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
 .tournament-rounds {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(var(--round-count), minmax(260px, 1fr));
   gap: 24px;
+}
+.tournament-round {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .tournament-round ul {
   list-style: none;
   margin: 16px 0 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  grid-template-rows: repeat(var(--match-count), minmax(144px, 1fr));
+  flex: 1;
+  gap: 16px;
+}
+.tournament-round li {
+  display: flex;
+  align-items: center;
 }
 .bracket-match {
   display: grid;
@@ -17,6 +37,8 @@
   background: var(--color-inset);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  width: 100%;
+  min-height: 128px;
 }
 .bracket-match:hover {
   border-color: var(--color-accent);
@@ -35,6 +57,25 @@
   min-width: 0;
 }
 .bracket-winner {
-  color: var(--color-error);
+  color: var(--color-text);
   font-weight: 800;
+}
+.bracket-winner-mark {
+  color: var(--color-success);
+}
+.bracket-team > span:last-child {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.tournament-page .tournament-champion {
+  border-color: var(--color-accent);
+}
+.tournament-champion h2 {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+.tournament-champion a {
+  font-size: 24px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
