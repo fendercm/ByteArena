@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Cookie, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.auth import discord
 from app.auth.security import (
@@ -14,6 +14,7 @@ from app.auth.security import (
 )
 from app.config import settings
 from app.db import DbSession
+from app.models.team_member import TeamMember
 from app.models.user import User
 from app.schemas.common import ErrorOut
 
@@ -137,6 +138,13 @@ def discord_callback(
     # ник и аватар обновляются при каждом входе: человек мог сменить их в Discord
     user.nickname = profile.nickname
     user.avatar_url = profile.avatar_url
+    db.flush()  # у нового игрока появился id
+    # в составах хранится копия ника: обновляем её, чтобы в командах был текущий ник
+    db.execute(
+        update(TeamMember)
+        .where(TeamMember.user_id == user.id)
+        .values(nickname=profile.nickname[:32])
+    )
     db.commit()
     return _login_response(user)
 
