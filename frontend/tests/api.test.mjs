@@ -208,3 +208,27 @@ test("match 404 remains distinct from network errors", async () => {
     (error) => error instanceof ApiError && error.status === 404,
   );
 });
+
+test("POST /api/tournaments/:id/start starts a tournament", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/tournaments/42/start");
+    assert.equal(options.method, "POST");
+    assert.equal(options.credentials, "include");
+    return Response.json({ id: 42, status: "running", matches: [] });
+  };
+  const result = await api.startTournament(42);
+  assert.equal(result.status, "running");
+});
+
+test("POST /api/matches/:id/result saves or updates a match score", async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "/api/matches/17/result");
+    assert.equal(options.method, "POST");
+    assert.equal(options.credentials, "include");
+    assert.deepEqual(JSON.parse(options.body), { score1: 13, score2: 9 });
+    return Response.json({ id: 17, score1: 13, score2: 9, status: "finished" });
+  };
+  const result = await api.setMatchResult(17, { score1: 13, score2: 9 });
+  assert.equal(result.score1, 13);
+  assert.equal(result.status, "finished");
+});

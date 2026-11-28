@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { api, formatDate } from "@/lib/api";
 import { discordLoginUrl } from "@/lib/auth";
 import "../../tournaments.css";
+import MatchResultEditor from "@/components/MatchResultEditor";
 
 const MIN_TEAMS_TO_CLOSE = 2;
 
@@ -50,14 +51,7 @@ function MemberAvatar({ member }) {
   );
 }
 
-function RegistrationCard({
-  registration,
-  isRegistrationOpen,
-  isFull,
-  isBusy,
-  error,
-  onDecide,
-}) {
+function RegistrationCard({ registration, isRegistrationOpen, isFull, isBusy, error, onDecide }) {
   const captain = registration.members.find((member) => member.role === "captain");
   const canApprove = registration.status !== "approved";
   const canReject = registration.status !== "rejected";
@@ -152,6 +146,10 @@ export default function TournamentManagePage({ params }) {
   const [closing, setClosing] = useState(false);
   const [closeError, setCloseError] = useState("");
 
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState("");
+  const [confirmStart, setConfirmStart] = useState(false);
+
   useEffect(() => {
     if (authLoading || !user) return;
     const controller = new AbortController();
@@ -185,9 +183,7 @@ export default function TournamentManagePage({ params }) {
     setCloseError("");
     try {
       const updated = await api.decideRegistration(registrationId, nextStatus);
-      setRegistrations((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      setRegistrations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       if (nextStatus !== "approved") {
         setConfirmClose(false);
       }
@@ -212,6 +208,20 @@ export default function TournamentManagePage({ params }) {
       setCloseError(err.message || "Не удалось закрыть регистрацию");
     } finally {
       setClosing(false);
+    }
+  }
+
+  async function handleStartTournament() {
+    setStarting(true);
+    setStartError("");
+    try {
+      const updated = await api.startTournament(tournament.id);
+      setTournament(updated);
+      setConfirmStart(false);
+    } catch (error) {
+      setStartError(error.message || "Не удалось запустить турнир");
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -283,11 +293,7 @@ export default function TournamentManagePage({ params }) {
           {loadError.message}
         </p>
         <div>
-          <button
-            type="button"
-            className="button"
-            onClick={() => setAttempt((value) => value + 1)}
-          >
+          <button type="button" className="button" onClick={() => setAttempt((value) => value + 1)}>
             Повторить
           </button>
         </div>
@@ -424,11 +430,61 @@ export default function TournamentManagePage({ params }) {
       <div className="panel">
         <h2>Матчи</h2>
         {tournament.status === "closed" ? (
-          <p className="muted">Сетка появится после запуска турнира</p>
+          <div className="close-registration-block">
+            <p className="muted">Регистрация закрыта. Можно построить сетку и запустить турнир.</p>
+            {!confirmStart ? (
+              <button
+                type="button"
+                className="button"
+                disabled={starting}
+                onClick={() => setConfirmStart(true)}
+              >
+                Запустить турнир
+              </button>
+            ) : (
+              <div className="confirm-box" role="region" aria-label="Подтверждение запуска">
+                <p>Построить сетку из подтверждённых команд и запустить турнир?</p>
+                <div className="confirm-actions">
+                  <button
+                    type="button"
+                    className="button button-small"
+                    disabled={starting}
+                    onClick={handleStartTournament}
+                  >
+                    {starting ? "Запускаем…" : "Подтвердить запуск"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary button-small"
+                    disabled={starting}
+                    onClick={() => setConfirmStart(false)}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
+            {startError && (
+              <p className="error-message" role="alert">
+                {startError}
+              </p>
+            )}
+          </div>
         ) : tournament.status === "registration" || tournament.status === "draft" ? (
           <p className="muted">Закройте регистрацию, чтобы перейти к запуску турнира.</p>
         ) : (
-          <p className="muted">Турнир уже запущен.</p>
+          <>
+            <MatchResultEditor
+              matches={tournament.matches ?? []}
+              teams={tournament.teams ?? []}
+              onUpdated={setTournament}
+            />
+            {tournament.status === "finished" && (
+              <p className="success-notice" role="status">
+                Турнир завершён. Все результаты сохранены.
+              </p>
+            )}
+          </>
         )}
       </div>
     </section>

@@ -28,6 +28,15 @@ export const api = {
   getMatch: (id, signal) =>
     request(`/matches/${encodeURIComponent(id)}`, { signal, cache: "no-store" }),
 
+  startTournament: (id) =>
+    request(`/tournaments/${encodeURIComponent(id)}/start`, { method: "POST" }),
+
+  setMatchResult: (id, result) =>
+    request(`/matches/${encodeURIComponent(id)}/result`, {
+      method: "POST",
+      body: JSON.stringify(result),
+    }),
+
   getTournamentTeams: (id, signal) =>
     request(`/tournaments/${encodeURIComponent(id)}/teams`, { signal, cache: "no-store" }),
 
